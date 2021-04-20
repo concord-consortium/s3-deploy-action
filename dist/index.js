@@ -87,7 +87,7 @@ function run() {
         try {
             const { deployPath, version, branch } = deploy_props_1.getDeployProps(github_1.context.ref);
             core.info(`deployPath: ${deployPath}`);
-            process.env.SUB_DIR_PATH = deployPath;
+            process.env.DEPLOY_PATH = deployPath;
             yield exec.exec("npm run build");
             core.setOutput("deployPath", deployPath);
             const bucket = core.getInput("bucket");
@@ -106,9 +106,6 @@ function run() {
                     topBranchesJSON
                 });
             }
-            // TODO:
-            // - refactor to make the list of index.html files more clear and configurable
-            // - change name of SUB_DIR_PATH to be something more informative
         }
         catch (error) {
             core.setFailed(error.message);

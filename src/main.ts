@@ -9,7 +9,8 @@ async function run(): Promise<void> {
   try {
     const {deployPath, version, branch} = getDeployProps(context.ref);
     core.info(`deployPath: ${deployPath}`);
-    process.env.SUB_DIR_PATH = deployPath;
+
+    process.env.DEPLOY_PATH = deployPath;
     await exec.exec("npm run build");
     core.setOutput("deployPath", deployPath);
 
@@ -29,10 +30,6 @@ async function run(): Promise<void> {
         prefix,
         topBranchesJSON });
     }
-
-    // TODO:
-    // - refactor to make the list of index.html files more clear and configurable
-    // - change name of SUB_DIR_PATH to be something more informative
 
   } catch (error) {
     core.setFailed(error.message);
