@@ -1,11 +1,11 @@
 import * as core from '@actions/core';
 import {context} from '@actions/github';
 import * as exec from '@actions/exec';
-import {getDeployPath} from './deploy-path';
+import {getDeployProps} from './deploy-props';
 import * as process from 'process';
 
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
-async function s3Upload(baseS3Url: string, maxAge: number): Promise<void> {
+async function s3Upload(deployS3Url: string, maxAge: number): Promise<void> {
   process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
   process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
   process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
@@ -23,16 +23,16 @@ async function s3Upload(baseS3Url: string, maxAge: number): Promise<void> {
 
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAge}"`;
-  await exec.exec(`aws s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
+  await exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
-  await exec.exec(`aws s3 cp ./dist/index.html ${baseS3Url}/ ${noCache}`);
-  await exec.exec(`aws s3 cp ./dist/index-top.html ${baseS3Url}/ ${noCache}`);
+  await exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
+  await exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
 }
 
 async function run(): Promise<void> {
   try {
-    const deployPath = getDeployPath(context.ref);
+    const {deployPath, version, branch} = getDeployProps(context.ref);
     core.info(`deployPath: ${deployPath}`);
     process.env['SUB_DIR_PATH'] = deployPath;
     await exec.exec('npm run build');
@@ -41,13 +41,25 @@ async function run(): Promise<void> {
     const bucket = core.getInput('bucket');
     const prefix = core.getInput('prefix');
     if (bucket && prefix) {
-      const baseS3Url = `s3://${bucket}/${prefix}/${deployPath}`;
-      const maxAge = deployPath.startsWith('version') ? 60*60*24*365 : 60*2;
-      await s3Upload(baseS3Url, maxAge);
+      const topLevelS3Url = `s3://${bucket}/${prefix}`;
+      const deployS3Url = `${topLevelS3Url}/${deployPath}`;
+      const maxAge = version ? 60*60*24*365 : 60*2;
+      await s3Upload(deployS3Url, maxAge);
+
+      // seems better to move this into the s3Upload function
+      const topBranchesInput = core.getInput('topBranches');
+      if (topBranchesInput) {
+        const topBranches = JSON.parse(topBranchesInput);
+        if (topBranches.includes(branch)) {
+          await exec.exec(`aws s3 cp ${deployS3Url}/index-top.html s3://${topLevelS3Url}/index-${branch}.html`);
+        }
+      }
     }
+
 
     // TODO:
     // - use workflow_dispatch to add the release UI right into GitHub itself!!!
+    // - refactor to make the list of index.html files more clear and configurable
 
   } catch (error) {
     core.setFailed(error.message)

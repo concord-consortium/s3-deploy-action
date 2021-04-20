@@ -2,20 +2,23 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 9096:
+/***/ 8534:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getDeployPath = void 0;
-function getDeployPath(gitRefs) {
+exports.getDeployProps = void 0;
+function getDeployProps(gitRefs) {
     const versionMatch = gitRefs.match(/refs\/tags\/(.*)/);
     const version = versionMatch && versionMatch[1];
     const branchMatch = gitRefs.match(/refs\/heads\/(.*)/);
     const branch = branchMatch && branchMatch[1];
     if (version) {
-        return `version/${version}`;
+        return {
+            deployPath: `version/${version}`,
+            version
+        };
     }
     if (branch) {
         const prefixStripMatch = branch.match(/^[0-9]{8,}-(.+)$/);
@@ -27,11 +30,14 @@ function getDeployPath(gitRefs) {
         else if (suffixStripMatch) {
             strippedBranch = suffixStripMatch[1];
         }
-        return `branch/${strippedBranch}`;
+        return {
+            deployPath: `branch/${strippedBranch}`,
+            branch: strippedBranch
+        };
     }
     throw new Error(`Unknown ref: ${gitRefs}`);
 }
-exports.getDeployPath = getDeployPath;
+exports.getDeployProps = getDeployProps;
 
 
 /***/ }),
@@ -73,10 +79,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(2186));
 const github_1 = __webpack_require__(5438);
 const exec = __importStar(__webpack_require__(1514));
-const deploy_path_1 = __webpack_require__(9096);
+const deploy_props_1 = __webpack_require__(8534);
 const process = __importStar(__webpack_require__(1765));
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
-function s3Upload(baseS3Url, maxAge) {
+function s3Upload(deployS3Url, maxAge) {
     return __awaiter(this, void 0, void 0, function* () {
         process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
         process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
@@ -93,16 +99,16 @@ function s3Upload(baseS3Url, maxAge) {
         // branch does not seem worth fixing.
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAge}"`;
-        yield exec.exec(`aws s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
+        yield exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
-        yield exec.exec(`aws s3 cp ./dist/index.html ${baseS3Url}/ ${noCache}`);
-        yield exec.exec(`aws s3 cp ./dist/index-top.html ${baseS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
     });
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const deployPath = deploy_path_1.getDeployPath(github_1.context.ref);
+            const { deployPath, version, branch } = deploy_props_1.getDeployProps(github_1.context.ref);
             core.info(`deployPath: ${deployPath}`);
             process.env['SUB_DIR_PATH'] = deployPath;
             yield exec.exec('npm run build');
@@ -110,12 +116,22 @@ function run() {
             const bucket = core.getInput('bucket');
             const prefix = core.getInput('prefix');
             if (bucket && prefix) {
-                const baseS3Url = `s3://${bucket}/${prefix}/${deployPath}`;
-                const maxAge = deployPath.startsWith('version') ? 60 * 60 * 24 * 365 : 60 * 2;
-                yield s3Upload(baseS3Url, maxAge);
+                const topLevelS3Url = `s3://${bucket}/${prefix}`;
+                const deployS3Url = `${topLevelS3Url}/${deployPath}`;
+                const maxAge = version ? 60 * 60 * 24 * 365 : 60 * 2;
+                yield s3Upload(deployS3Url, maxAge);
+                // seems better to move this into the s3Upload function
+                const topBranchesInput = core.getInput('topBranches');
+                if (topBranchesInput) {
+                    const topBranches = JSON.parse(topBranchesInput);
+                    if (topBranches.includes(branch)) {
+                        yield exec.exec(`aws s3 cp ${deployS3Url}/index-top.html s3://${topLevelS3Url}/index-${branch}.html`);
+                    }
+                }
             }
             // TODO:
             // - use workflow_dispatch to add the release UI right into GitHub itself!!!
+            // - refactor to make the list of index.html files more clear and configurable
         }
         catch (error) {
             core.setFailed(error.message);

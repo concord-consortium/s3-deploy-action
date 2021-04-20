@@ -1,10 +1,13 @@
-export function getDeployPath(gitRefs: string): string {
+export function getDeployProps(gitRefs: string): {deployPath: string, version?: string, branch?: string} {
   const versionMatch = gitRefs.match(/refs\/tags\/(.*)/);
   const version = versionMatch && versionMatch[1];
   const branchMatch = gitRefs.match(/refs\/heads\/(.*)/);
   const branch = branchMatch && branchMatch[1];
   if (version) {
-    return `version/${version}`;
+    return {
+      deployPath: `version/${version}`,
+      version
+    }
   }
   if (branch) {
     const prefixStripMatch = branch.match(/^[0-9]{8,}-(.+)$/);
@@ -15,7 +18,10 @@ export function getDeployPath(gitRefs: string): string {
     } else if (suffixStripMatch) {
       strippedBranch = suffixStripMatch[1];
     }
-    return `branch/${strippedBranch}`;
+    return {
+      deployPath: `branch/${strippedBranch}`,
+      branch: strippedBranch
+    };
   }
   throw new Error(`Unknown ref: ${gitRefs}`);
 }

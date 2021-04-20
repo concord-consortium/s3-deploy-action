@@ -14,6 +14,11 @@ inputs:
   prefix:
     description: S3 prefix to prepend to files uploaded to S3
     required: true
+  topBranches:
+    description: A JSON array of branch names (without PT number) for which the
+      index-top.html file will be copied to the top. The file name will be
+      [prefix]/index-[branchName].html
+    required: false
 outputs:
   deployPath:
     description: 'The location where the files will be stored'
