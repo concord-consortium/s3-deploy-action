@@ -80,6 +80,7 @@ function s3Upload(baseS3Url, maxAge) {
     return __awaiter(this, void 0, void 0, function* () {
         process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
         process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
+        process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
         // Currently this syncs the non index.html files first and then updates the index.html
         // files. So there is a moment when index.html files do not match the resources.
         // We could do this in 3 steps so there was no time when the index.html files
@@ -92,7 +93,7 @@ function s3Upload(baseS3Url, maxAge) {
         // branch does not seem worth fixing.
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAge}"`;
-        yield exec.exec(`aws s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
+        yield exec.exec(`aws --debug s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
         yield exec.exec(`aws s3 cp ./dist/index.html ${baseS3Url}/ ${noCache}`);
         yield exec.exec(`aws s3 cp ./dist/index-top.html ${baseS3Url}/ ${noCache}`);
