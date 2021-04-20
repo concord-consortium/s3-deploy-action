@@ -80,31 +80,8 @@ const core = __importStar(__webpack_require__(2186));
 const github_1 = __webpack_require__(5438);
 const exec = __importStar(__webpack_require__(1514));
 const deploy_props_1 = __webpack_require__(8534);
+const s3_update_1 = __webpack_require__(9129);
 const process = __importStar(__webpack_require__(1765));
-// Upload dist folder to the S3 bucket with the prefix followed by the deployPath
-function s3Upload(deployS3Url, maxAge) {
-    return __awaiter(this, void 0, void 0, function* () {
-        process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
-        process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
-        process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
-        // Currently this syncs the non index.html files first and then updates the index.html
-        // files. So there is a moment when index.html files do not match the resources.
-        // We could do this in 3 steps so there was no time when the index.html files
-        // referenced missing resources. But even in that case a browser could have fetched
-        // the old index.html just before it was replaced and then would be trying to
-        // fetch the old resources as they are being deleted. The safest approach would be
-        // to queue some kind of cleanup task which would delete the old resources several
-        // minutes later.
-        // However, branches are not intended for production use, so the occational broken
-        // branch does not seem worth fixing.
-        const excludes = `--exclude "index.html" --exclude "index-top.html"`;
-        const cacheControl = `--cache-control "max-age=${maxAge}"`;
-        yield exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
-        const noCache = `--cache-control "no-cache, max-age=0"`;
-        yield exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
-        yield exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
-    });
-}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -115,19 +92,19 @@ function run() {
             core.setOutput('deployPath', deployPath);
             const bucket = core.getInput('bucket');
             const prefix = core.getInput('prefix');
+            const topBranchesJSON = core.getInput('topBranches');
             if (bucket && prefix) {
-                const topLevelS3Url = `s3://${bucket}/${prefix}`;
-                const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-                const maxAge = version ? 60 * 60 * 24 * 365 : 60 * 2;
-                yield s3Upload(deployS3Url, maxAge);
-                // seems better to move this into the s3Upload function
-                const topBranchesInput = core.getInput('topBranches');
-                if (topBranchesInput) {
-                    const topBranches = JSON.parse(topBranchesInput);
-                    if (topBranches.includes(branch)) {
-                        yield exec.exec(`aws s3 cp ${deployS3Url}/index-top.html ${topLevelS3Url}/index-${branch}.html`);
-                    }
-                }
+                process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
+                process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
+                process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
+                yield s3_update_1.s3Update({
+                    deployPath,
+                    version,
+                    branch,
+                    bucket,
+                    prefix,
+                    topBranchesJSON
+                });
             }
             // TODO:
             // - use workflow_dispatch to add the release UI right into GitHub itself!!!
@@ -139,6 +116,78 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 9129:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.s3Update = void 0;
+const exec = __importStar(__webpack_require__(1514));
+// Upload dist folder to the S3 bucket with the prefix followed by the deployPath
+function s3Update(options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Currently this syncs the non index.html files first and then updates the index.html
+        // files. So there is a moment when index.html files do not match the resources.
+        // We could do this in 3 steps so there was no time when the index.html files
+        // referenced missing resources. But even in that case a browser could have fetched
+        // the old index.html just before it was replaced and then would be trying to
+        // fetch the old resources as they are being deleted. The safest approach would be
+        // to queue some kind of cleanup task which would delete the old resources several
+        // minutes later.
+        // However, branches are not intended for production use, so the occational broken
+        // branch does not seem worth fixing.
+        const { deployPath, version, branch, bucket, prefix, topBranchesJSON } = options;
+        const topLevelS3Url = `s3://${bucket}/${prefix}`;
+        const deployS3Url = `${topLevelS3Url}/${deployPath}`;
+        const maxAge = version ? 60 * 60 * 24 * 365 : 60 * 2;
+        const excludes = `--exclude "index.html" --exclude "index-top.html"`;
+        const cacheControl = `--cache-control "max-age=${maxAge}"`;
+        yield exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+        const noCache = `--cache-control "no-cache, max-age=0"`;
+        yield exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
+        if (topBranchesJSON) {
+            const topBranches = JSON.parse(topBranchesJSON);
+            if (topBranches.includes(branch)) {
+                yield exec.exec(`aws s3 cp ${deployS3Url}/index-top.html ${topLevelS3Url}/index-${branch}.html`);
+            }
+        }
+    });
+}
+exports.s3Update = s3Update;
 
 
 /***/ }),
