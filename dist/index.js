@@ -87,16 +87,16 @@ function run() {
         try {
             const { deployPath, version, branch } = deploy_props_1.getDeployProps(github_1.context.ref);
             core.info(`deployPath: ${deployPath}`);
-            process.env['SUB_DIR_PATH'] = deployPath;
-            yield exec.exec('npm run build');
-            core.setOutput('deployPath', deployPath);
-            const bucket = core.getInput('bucket');
-            const prefix = core.getInput('prefix');
-            const topBranchesJSON = core.getInput('topBranches');
+            process.env.SUB_DIR_PATH = deployPath;
+            yield exec.exec("npm run build");
+            core.setOutput("deployPath", deployPath);
+            const bucket = core.getInput("bucket");
+            const prefix = core.getInput("prefix");
+            const topBranchesJSON = core.getInput("topBranches");
             if (bucket && prefix) {
-                process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
-                process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
-                process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
+                process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
+                process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
+                process.env.AWS_DEFAULT_REGION = "us-east-1";
                 yield s3_update_1.s3Update({
                     deployPath,
                     version,

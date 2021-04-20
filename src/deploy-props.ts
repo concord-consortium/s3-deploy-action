@@ -7,7 +7,7 @@ export function getDeployProps(gitRefs: string): {deployPath: string, version?: 
     return {
       deployPath: `version/${version}`,
       version
-    }
+    };
   }
   if (branch) {
     const prefixStripMatch = branch.match(/^[0-9]{8,}-(.+)$/);

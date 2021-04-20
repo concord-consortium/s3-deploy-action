@@ -1,4 +1,4 @@
-import * as exec from '@actions/exec';
+import * as exec from "@actions/exec";
 
 export interface S3UpdateOptions {
   deployPath: string,
