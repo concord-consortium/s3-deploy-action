@@ -93,7 +93,7 @@ function s3Upload(baseS3Url, maxAge) {
         // branch does not seem worth fixing.
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAge}"`;
-        yield exec.exec(`aws --debug s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
+        yield exec.exec(`aws s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
         yield exec.exec(`aws s3 cp ./dist/index.html ${baseS3Url}/ ${noCache}`);
         yield exec.exec(`aws s3 cp ./dist/index-top.html ${baseS3Url}/ ${noCache}`);
