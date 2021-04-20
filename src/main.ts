@@ -30,10 +30,9 @@ async function run(): Promise<void> {
         topBranchesJSON });
     }
 
-
     // TODO:
-    // - use workflow_dispatch to add the release UI right into GitHub itself!!!
     // - refactor to make the list of index.html files more clear and configurable
+    // - change name of SUB_DIR_PATH to be something more informative
 
   } catch (error) {
     core.setFailed(error.message);
