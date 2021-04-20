@@ -22,7 +22,7 @@ async function s3Upload(baseS3Url: string, maxAge: number): Promise<void> {
 
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAge}"`;
-  await exec.exec(`aws s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
+  await exec.exec(`aws --debug s3 sync ./dist ${baseS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
   await exec.exec(`aws s3 cp ./dist/index.html ${baseS3Url}/ ${noCache}`);
