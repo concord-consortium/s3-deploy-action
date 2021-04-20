@@ -8,6 +8,7 @@ import * as process from 'process';
 async function s3Upload(baseS3Url: string, maxAge: number): Promise<void> {
   process.env['AWS_ACCESS_KEY_ID'] = core.getInput('awsAccessKeyId');
   process.env['AWS_SECRET_ACCESS_KEY'] = core.getInput('awsSecretAccessKey');
+  process.env['AWS_DEFAULT_REGION'] = 'us-east-1';
 
   // Currently this syncs the non index.html files first and then updates the index.html
   // files. So there is a moment when index.html files do not match the resources.
