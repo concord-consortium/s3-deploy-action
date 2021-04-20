@@ -1,6 +1,19 @@
 name: 'S3 Deploy'
 description: 'Deploy an SPA to S3 using branch and version sub directories'
 author: 'The Concord Consortium'
+inputs:
+  awsAccessKeyId:
+    description: AWS access key id
+    required: true
+  awsSecretAccessKey:
+    description: AWS secret access key
+    required: true
+  bucket:
+    description: S3 Bucket to deploy files to
+    required: true
+  prefix:
+    description: S3 prefix to prepend to files uploaded to S3
+    required: true
 outputs:
   deployPath:
     description: 'The location where the files will be stored'
