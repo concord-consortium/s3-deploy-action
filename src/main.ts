@@ -51,7 +51,7 @@ async function run(): Promise<void> {
       if (topBranchesInput) {
         const topBranches = JSON.parse(topBranchesInput);
         if (topBranches.includes(branch)) {
-          await exec.exec(`aws s3 cp ${deployS3Url}/index-top.html s3://${topLevelS3Url}/index-${branch}.html`);
+          await exec.exec(`aws s3 cp ${deployS3Url}/index-top.html ${topLevelS3Url}/index-${branch}.html`);
         }
       }
     }

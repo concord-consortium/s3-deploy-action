@@ -125,7 +125,7 @@ function run() {
                 if (topBranchesInput) {
                     const topBranches = JSON.parse(topBranchesInput);
                     if (topBranches.includes(branch)) {
-                        yield exec.exec(`aws s3 cp ${deployS3Url}/index-top.html s3://${topLevelS3Url}/index-${branch}.html`);
+                        yield exec.exec(`aws s3 cp ${deployS3Url}/index-top.html ${topLevelS3Url}/index-${branch}.html`);
                     }
                 }
             }
