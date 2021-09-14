@@ -1,19 +1,39 @@
-import * as core from '@actions/core'
-import {wait} from './wait'
+import * as core from "@actions/core";
+import {context} from "@actions/github";
+import * as exec from "@actions/exec";
+import {getDeployProps} from "./deploy-props";
+import {s3Update} from "./s3-update";
+import * as process from "process";
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+    const {deployPath, version, branch} = getDeployProps(context.ref);
+    core.info(`deployPath: ${deployPath}`);
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    process.env.DEPLOY_PATH = deployPath;
+    await exec.exec("npm run build");
+    core.setOutput("deployPath", deployPath);
 
-    core.setOutput('time', new Date().toTimeString())
+    const bucket = core.getInput("bucket");
+    const prefix = core.getInput("prefix");
+    const topBranchesJSON = core.getInput("topBranches");
+    if (bucket && prefix) {
+      process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
+      process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
+      process.env.AWS_DEFAULT_REGION = "us-east-1";
+
+      await s3Update({
+        deployPath,
+        version,
+        branch,
+        bucket,
+        prefix,
+        topBranchesJSON });
+    }
+
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed(error.message);
   }
 }
 
-run()
+run();

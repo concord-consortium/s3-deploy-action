@@ -1,24 +1,114 @@
-import {wait} from '../src/wait'
+jest.mock('@actions/exec')
+
+import {getDeployProps} from '../src/deploy-props'
+import {s3Update} from '../src/s3-update'
 import * as process from 'process'
 import * as cp from 'child_process'
 import * as path from 'path'
+import * as exec from "@actions/exec";
 
-test('throws invalid number', async () => {
-  const input = parseInt('foo', 10)
-  await expect(wait(input)).rejects.toThrow('milliseconds not a number')
+
+test('getDeployProps version release', () => {
+  expect(getDeployProps("refs/tags/v1.2.3"))
+    .toEqual({deployPath: "version/v1.2.3", version: "v1.2.3"});
 })
 
-test('wait 500 ms', async () => {
-  const start = new Date()
-  await wait(500)
-  const end = new Date()
-  var delta = Math.abs(end.getTime() - start.getTime())
-  expect(delta).toBeGreaterThan(450)
+test('getDeployProps PT prefix branch', () => {
+  expect(getDeployProps("refs/heads/123456789-test-branch"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
 })
 
-// shows how the runner will run a javascript action with env / stdout protocol
+test('getDeployProps PT prefix branch with "#"', () => {
+  expect(getDeployProps("refs/heads/#123456789-test-branch"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
+test('getDeployProps PT suffix branch', () => {
+  expect(getDeployProps("refs/heads/test-branch-123456789"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
+test('getDeployProps PT suffix branch with "#"', () => {
+  expect(getDeployProps("refs/heads/test-branch-#123456789"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
+test('getDeployProps not PT branch', () => {
+  expect(getDeployProps("refs/heads/test-branch"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
+test('basic s3Update with branch calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
+test('basic s3Update with version calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'version/v1.2.3',
+    version: 'v1.2.3',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=31536000"'],
+    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
+test('s3Update with matching top branch calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    topBranchesJSON: '["test-branch", "main"]'
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp s3://test-bucket/fake-app/branch/test-branch/index-top.html s3://test-bucket/fake-app/index-test-branch.html']
+  ]);
+})
+
+test('s3Update without matching top branch calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    topBranchesJSON: '["main", "special-feature"]'
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
+
+// Test the action using the env / stdout protocol
 test('test runs', () => {
-  process.env['INPUT_MILLISECONDS'] = '500'
+  process.env['GITHUB_REF'] = "refs/heads/test-branch";
   const np = process.execPath
   const ip = path.join(__dirname, '..', 'lib', 'main.js')
   const options: cp.ExecFileSyncOptions = {

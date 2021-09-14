@@ -1,11 +1,27 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'S3 Deploy'
+description: 'Deploy an SPA to S3 using branch and version sub directories'
+author: 'The Concord Consortium'
 inputs:
-  milliseconds: # change this
+  awsAccessKeyId:
+    description: AWS access key id
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  awsSecretAccessKey:
+    description: AWS secret access key
+    required: true
+  bucket:
+    description: S3 Bucket to deploy files to
+    required: true
+  prefix:
+    description: S3 prefix to prepend to files uploaded to S3
+    required: true
+  topBranches:
+    description: A JSON array of branch names (without PT number) for which the
+      index-top.html file will be copied to the top. The file name will be
+      [prefix]/index-[branchName].html
+    required: false
+outputs:
+  deployPath:
+    description: 'The location where the files will be stored'
 runs:
   using: 'node12'
   main: 'dist/index.js'
