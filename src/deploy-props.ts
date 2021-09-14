@@ -10,8 +10,8 @@ export function getDeployProps(gitRefs: string): {deployPath: string, version?: 
     };
   }
   if (branch) {
-    const prefixStripMatch = branch.match(/^[0-9]{8,}-(.+)$/);
-    const suffixStripMatch = branch.match(/^(.+)-[0-9]{8,}$/);
+    const prefixStripMatch = branch.match(/^#?[0-9]{8,}-(.+)$/);
+    const suffixStripMatch = branch.match(/^(.+)-#?[0-9]{8,}$/);
     let strippedBranch = branch;
     if (prefixStripMatch) {
       strippedBranch = prefixStripMatch[1];

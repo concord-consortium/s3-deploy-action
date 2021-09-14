@@ -19,7 +19,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   // fetch the old resources as they are being deleted. The safest approach would be
   // to queue some kind of cleanup task which would delete the old resources several
   // minutes later.
-  // However, branches are not intended for production use, so the occational broken
+  // However, branches are not intended for production use, so the occasional broken
   // branch does not seem worth fixing.
 
   const { deployPath, version, branch, bucket, prefix, topBranchesJSON } = options;
@@ -30,7 +30,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
 
 
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
-  const cacheControl = `--cache-control "max-age=${maxAge}"`;
+  const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
   await exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
