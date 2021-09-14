@@ -26,7 +26,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
 
   const topLevelS3Url = `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-  const maxAge = version ? 60*60*24*365 : 60*2;
+  const maxAgeSecs = version ? 60*60*24*365 : 60*2;
 
 
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
