@@ -9,6 +9,10 @@ export interface S3UpdateOptions {
   topBranchesJSON?: string
 }
 
+const MAX_AGE_VERSION_SECS = 60*60*24*365;
+const MAX_AGE_BRANCH_SECS = 0;
+
+
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
 export async function s3Update(options: S3UpdateOptions): Promise<void> {
   // Currently this syncs the non index.html files first and then updates the index.html
@@ -26,7 +30,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
 
   const topLevelS3Url = `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-  const maxAgeSecs = version ? 60*60*24*365 : 60*2;
+  const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
 
 
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;

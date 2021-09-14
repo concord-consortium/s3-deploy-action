@@ -20,6 +20,21 @@ S3. The location in S3 depends on if this is a branch or tag:
 - If it is a tag it will be:
 `models-resources/name-of-project/version/[tag-name]`
 
+This action currently assumes there will be an index.html and index-top.html file created
+in `dist` by the build. The index-top.html should reference its dependencies using a
+prefix of `branch/[branch-name]/` or `version/[tag-name]/`. This way the index-top.html
+can be copied up and will be able to find its resources.
+
+The max-age of the files in branches is configured to be 0. This way changes to branches
+are seen immediately. Branches should not be used in production with high numbers of users.
+
+The max-age of the files in the version folder is set to be 1 year. Versions should not change
+so they can be cached basically forever.  
+
+The index files have their max-age set to 0 even for versions. These files should be small
+so it isn't important if they are cached. Also when the index-top.html file is copied to
+the top level that change should apply immediately.
+
 The list of branches in topBranches will have their `index-top.html` file copied and
 renamed with the branch name.
 So in this case, if the main branch is pushed,

@@ -48,7 +48,7 @@ test('basic s3Update with branch calls correct sync and copy commands', async ()
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=120"'],
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
     ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
     ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
   ]);
@@ -81,7 +81,7 @@ test('s3Update with matching top branch calls correct sync and copy commands', a
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=120"'],
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
     ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
     ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
     ['aws s3 cp s3://test-bucket/fake-app/branch/test-branch/index-top.html s3://test-bucket/fake-app/index-test-branch.html']
@@ -99,7 +99,7 @@ test('s3Update without matching top branch calls correct sync and copy commands'
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=120"'],
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
     ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
     ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
   ]);

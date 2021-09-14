@@ -152,6 +152,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.s3Update = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
+const MAX_AGE_VERSION_SECS = 60 * 60 * 24 * 365;
+const MAX_AGE_BRANCH_SECS = 0;
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
 function s3Update(options) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -168,7 +170,7 @@ function s3Update(options) {
         const { deployPath, version, branch, bucket, prefix, topBranchesJSON } = options;
         const topLevelS3Url = `s3://${bucket}/${prefix}`;
         const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-        const maxAgeSecs = version ? 60 * 60 * 24 * 365 : 60 * 2;
+        const maxAgeSecs = version ? MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
         yield exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
