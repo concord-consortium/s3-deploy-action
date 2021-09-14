@@ -18,8 +18,18 @@ test('getDeployProps PT prefix branch', () => {
     .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
 })
 
+test('getDeployProps PT prefix branch with "#"', () => {
+  expect(getDeployProps("refs/heads/#123456789-test-branch"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
 test('getDeployProps PT suffix branch', () => {
   expect(getDeployProps("refs/heads/test-branch-123456789"))
+    .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
+})
+
+test('getDeployProps PT suffix branch with "#"', () => {
+  expect(getDeployProps("refs/heads/test-branch-#123456789"))
     .toEqual({deployPath: "branch/test-branch", branch: "test-branch"});
 })
 
