@@ -39,9 +39,11 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   await exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
-  await exec.exec(`aws s3 cp ./${localFolder}/index.html ${deployS3Url}/ ${noCache}`);
-
+  const indexPath    = `${localFolder}/index.html`;
   const indexTopPath = `${localFolder}/index-top.html`;
+
+  await exec.exec(`aws s3 cp ./${indexPath} ${deployS3Url}/ ${noCache}`);
+
   if (fs.existsSync(indexTopPath)) {
     await exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
   }

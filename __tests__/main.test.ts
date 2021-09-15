@@ -130,7 +130,8 @@ test('s3Update without matching top branch calls correct sync and copy commands'
   ]);
 })
 
-test('s3Update without index-top.html correct sync and copy commands', async () => {
+test('s3Update without index-top.html calls correct sync and copy commands', async () => {
+  // mock out fs.execSync so it it always returns false, this is what s3Update is using
   (fs as any).existsSync.mockReturnValue(false);
   await s3Update({
     deployPath: 'branch/test-branch',

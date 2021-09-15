@@ -96,7 +96,7 @@ function run() {
             // this way the build can create the index-top.html that prefixes its dependencies
             // with this path
             process.env.DEPLOY_PATH = deployPath;
-            yield exec_1.exec(build, [], { cwd: workingDirectory });
+            yield exec_1.exec(build, [], execOptions);
             core.setOutput("deployPath", deployPath);
             const bucket = core.getInput("bucket");
             const prefix = core.getInput("prefix");
@@ -193,8 +193,9 @@ function s3Update(options) {
         const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
         yield exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
-        yield exec.exec(`aws s3 cp ./${localFolder}/index.html ${deployS3Url}/ ${noCache}`);
+        const indexPath = `${localFolder}/index.html`;
         const indexTopPath = `${localFolder}/index-top.html`;
+        yield exec.exec(`aws s3 cp ./${indexPath} ${deployS3Url}/ ${noCache}`);
         if (fs.existsSync(indexTopPath)) {
             yield exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
         }

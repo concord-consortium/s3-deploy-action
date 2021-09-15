@@ -21,7 +21,7 @@ async function run(): Promise<void> {
     // this way the build can create the index-top.html that prefixes its dependencies
     // with this path
     process.env.DEPLOY_PATH = deployPath;
-    await exec(build, [], {cwd: workingDirectory});
+    await exec(build, [], execOptions);
     core.setOutput("deployPath", deployPath);
 
     const bucket = core.getInput("bucket");
