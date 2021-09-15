@@ -44,6 +44,7 @@ test('basic s3Update with branch calls correct sync and copy commands', async ()
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
+    localFolder: 'dist'
   });
 
   const execMock = (exec.exec as any).mock;
@@ -60,6 +61,7 @@ test('basic s3Update with version calls correct sync and copy commands', async (
     version: 'v1.2.3',
     bucket: 'test-bucket',
     prefix: 'fake-app',
+    localFolder: 'dist'
   });
 
   const execMock = (exec.exec as any).mock;
@@ -70,12 +72,30 @@ test('basic s3Update with version calls correct sync and copy commands', async (
   ]);
 })
 
+test('basic s3Update with version and localFolder calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'version/v1.2.3',
+    version: 'v1.2.3',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    localFolder: 'fake-folder'
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./fake-folder s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=31536000"'],
+    ['aws s3 cp ./fake-folder/index.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp ./fake-folder/index-top.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
 test('s3Update with matching top branch calls correct sync and copy commands', async () => {
   await s3Update({
     deployPath: 'branch/test-branch',
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
+    localFolder: 'dist',
     topBranchesJSON: '["test-branch", "main"]'
   });
 
@@ -94,6 +114,7 @@ test('s3Update without matching top branch calls correct sync and copy commands'
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
+    localFolder: 'dist',
     topBranchesJSON: '["main", "special-feature"]'
   });
 

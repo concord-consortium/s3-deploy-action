@@ -77,7 +77,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
-const exec = __importStar(__nccwpck_require__(1514));
+const exec_1 = __nccwpck_require__(1514);
 const deploy_props_1 = __nccwpck_require__(8534);
 const s3_update_1 = __nccwpck_require__(9129);
 const process = __importStar(__nccwpck_require__(1765));
@@ -86,12 +86,28 @@ function run() {
         try {
             const { deployPath, version, branch } = deploy_props_1.getDeployProps(github_1.context.ref);
             core.info(`deployPath: ${deployPath}`);
+            const workingDirectory = core.getInput("workingDirectory");
+            const build = core.getInput("build") || "npm run build";
+            const execOptions = {};
+            if (workingDirectory) {
+                execOptions.cwd = workingDirectory;
+            }
+            // provide the deployPath to the build command as an env variable
+            // this way the build can create the index-top.html that prefixes its dependencies
+            // with this path
             process.env.DEPLOY_PATH = deployPath;
-            yield exec.exec("npm run build");
+            yield exec_1.exec(build, [], { cwd: workingDirectory });
             core.setOutput("deployPath", deployPath);
             const bucket = core.getInput("bucket");
             const prefix = core.getInput("prefix");
             const topBranchesJSON = core.getInput("topBranches");
+            const folderToDeploy = core.getInput("folderToDeploy");
+            const localFolderParts = [];
+            if (workingDirectory) {
+                localFolderParts.push(workingDirectory);
+            }
+            localFolderParts.push(folderToDeploy || "dist");
+            const localFolder = localFolderParts.join("/");
             if (bucket && prefix) {
                 process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
                 process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
@@ -102,7 +118,8 @@ function run() {
                     branch,
                     bucket,
                     prefix,
-                    topBranchesJSON
+                    topBranchesJSON,
+                    localFolder
                 });
             }
         }
@@ -167,16 +184,17 @@ function s3Update(options) {
         // minutes later.
         // However, branches are not intended for production use, so the occasional broken
         // branch does not seem worth fixing.
-        const { deployPath, version, branch, bucket, prefix, topBranchesJSON } = options;
+        const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder } = options;
         const topLevelS3Url = `s3://${bucket}/${prefix}`;
         const deployS3Url = `${topLevelS3Url}/${deployPath}`;
         const maxAgeSecs = version ? MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
+        const folder = localFolder;
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-        yield exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+        yield exec.exec(`aws s3 sync ./${folder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
-        yield exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
-        yield exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./${folder}/index.html ${deployS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./${folder}/index-top.html ${deployS3Url}/ ${noCache}`);
         if (topBranchesJSON) {
             const topBranches = JSON.parse(topBranchesJSON);
             if (topBranches.includes(branch)) {

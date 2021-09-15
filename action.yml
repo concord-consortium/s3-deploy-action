@@ -27,6 +27,11 @@ inputs:
     description: build command to run.
       Default is 'npm run build'
     required: false
+  folderToDeploy:
+    description: the folder created by the build command that should be deployed.
+      It is relative to the workdingDirectory if that is set.
+      Default is 'dist'
+    required: false
 outputs:
   deployPath:
     description: 'The location where the files will be stored'
