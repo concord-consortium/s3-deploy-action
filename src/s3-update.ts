@@ -34,15 +34,17 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
   const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
 
-  const folder = localFolder;
-
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-  await exec.exec(`aws s3 sync ./${folder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+  await exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
-  await exec.exec(`aws s3 cp ./${folder}/index.html ${deployS3Url}/ ${noCache}`);
-  await exec.exec(`aws s3 cp ./${folder}/index-top.html ${deployS3Url}/ ${noCache}`);
+  await exec.exec(`aws s3 cp ./${localFolder}/index.html ${deployS3Url}/ ${noCache}`);
+
+  const indexTopPath = `${localFolder}/index-top.html`;
+  if (fs.existsSync(indexTopPath)) {
+    await exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
+  }
 
   if (topBranchesJSON) {
     const topBranches = JSON.parse(topBranchesJSON);

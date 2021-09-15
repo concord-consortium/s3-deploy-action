@@ -1,12 +1,16 @@
-jest.mock('@actions/exec')
+jest.mock('@actions/exec');
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  existsSync: jest.fn().mockReturnValue(true)
+}));
 
 import {getDeployProps} from '../src/deploy-props'
 import {s3Update} from '../src/s3-update'
 import * as process from 'process'
 import * as cp from 'child_process'
 import * as path from 'path'
-import * as exec from "@actions/exec";
-
+import * as exec from '@actions/exec';
+import * as fs from 'fs';
 
 test('getDeployProps version release', () => {
   expect(getDeployProps("refs/tags/v1.2.3"))
@@ -126,6 +130,22 @@ test('s3Update without matching top branch calls correct sync and copy commands'
   ]);
 })
 
+test('s3Update without index-top.html correct sync and copy commands', async () => {
+  (fs as any).existsSync.mockReturnValue(false);
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    localFolder: 'dist',
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+  ]);
+})
 
 // Test the action using the env / stdout protocol
 test('test runs', () => {

@@ -169,6 +169,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.s3Update = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
+const fs = __importStar(__nccwpck_require__(5747));
 const MAX_AGE_VERSION_SECS = 60 * 60 * 24 * 365;
 const MAX_AGE_BRANCH_SECS = 0;
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
@@ -188,13 +189,15 @@ function s3Update(options) {
         const topLevelS3Url = `s3://${bucket}/${prefix}`;
         const deployS3Url = `${topLevelS3Url}/${deployPath}`;
         const maxAgeSecs = version ? MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
-        const folder = localFolder;
         const excludes = `--exclude "index.html" --exclude "index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-        yield exec.exec(`aws s3 sync ./${folder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+        yield exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
         const noCache = `--cache-control "no-cache, max-age=0"`;
-        yield exec.exec(`aws s3 cp ./${folder}/index.html ${deployS3Url}/ ${noCache}`);
-        yield exec.exec(`aws s3 cp ./${folder}/index-top.html ${deployS3Url}/ ${noCache}`);
+        yield exec.exec(`aws s3 cp ./${localFolder}/index.html ${deployS3Url}/ ${noCache}`);
+        const indexTopPath = `${localFolder}/index-top.html`;
+        if (fs.existsSync(indexTopPath)) {
+            yield exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
+        }
         if (topBranchesJSON) {
             const topBranches = JSON.parse(topBranchesJSON);
             if (topBranches.includes(branch)) {
