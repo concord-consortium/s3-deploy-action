@@ -1,4 +1,5 @@
 import * as exec from "@actions/exec";
+import * as fs from "fs";
 
 export interface S3UpdateOptions {
   deployPath: string,
@@ -6,7 +7,8 @@ export interface S3UpdateOptions {
   branch?: string,
   bucket: string,
   prefix: string,
-  topBranchesJSON?: string
+  topBranchesJSON?: string,
+  localFolder: string
 }
 
 const MAX_AGE_VERSION_SECS = 60*60*24*365;
@@ -26,20 +28,25 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   // However, branches are not intended for production use, so the occasional broken
   // branch does not seem worth fixing.
 
-  const { deployPath, version, branch, bucket, prefix, topBranchesJSON } = options;
+  const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder} = options;
 
   const topLevelS3Url = `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
   const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
 
-
   const excludes = `--exclude "index.html" --exclude "index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-  await exec.exec(`aws s3 sync ./dist ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+  await exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   const noCache = `--cache-control "no-cache, max-age=0"`;
-  await exec.exec(`aws s3 cp ./dist/index.html ${deployS3Url}/ ${noCache}`);
-  await exec.exec(`aws s3 cp ./dist/index-top.html ${deployS3Url}/ ${noCache}`);
+  const indexPath    = `${localFolder}/index.html`;
+  const indexTopPath = `${localFolder}/index-top.html`;
+
+  await exec.exec(`aws s3 cp ./${indexPath} ${deployS3Url}/ ${noCache}`);
+
+  if (fs.existsSync(indexTopPath)) {
+    await exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
+  }
 
   if (topBranchesJSON) {
     const topBranches = JSON.parse(topBranchesJSON);
