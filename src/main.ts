@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
 import {context} from "@actions/github";
-import * as exec from "@actions/exec";
+import {exec, ExecOptions} from "@actions/exec";
 import {getDeployProps} from "./deploy-props";
 import {s3Update} from "./s3-update";
 import * as process from "process";
@@ -10,8 +10,14 @@ async function run(): Promise<void> {
     const {deployPath, version, branch} = getDeployProps(context.ref);
     core.info(`deployPath: ${deployPath}`);
 
+    const workingDirectory = core.getInput("workingDirectory");
+    const build = core.getInput("build") || "npm run build";
+    const execOptions: ExecOptions = {};
+    if (workingDirectory) {
+      execOptions.cwd = workingDirectory;
+    }
     process.env.DEPLOY_PATH = deployPath;
-    await exec.exec("npm run build");
+    await exec(build, [], {cwd: workingDirectory});
     core.setOutput("deployPath", deployPath);
 
     const bucket = core.getInput("bucket");

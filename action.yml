@@ -19,6 +19,14 @@ inputs:
       index-top.html file will be copied to the top. The file name will be
       [prefix]/index-[branchName].html
     required: false
+  workingDirectory:
+    description: Directory where the build command will be run.
+      Default is the top level.
+    required: false
+  build:
+    description: build command to run.
+      Default is 'npm run build'
+    required: false
 outputs:
   deployPath:
     description: 'The location where the files will be stored'
