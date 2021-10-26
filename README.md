@@ -37,7 +37,7 @@ The folder that is copied to S3 can be overridden with `folderToDeploy`. Its val
 relative to the `workingDirectory`.
 
 ## Top Branch Example
-This action also support a concept of top branches. A simple configuration of this is:
+This action also supports a concept of top branches. A simple configuration of this is:
 
 ```
 - uses: concord-consortium/s3-deploy-action@v1
@@ -50,10 +50,10 @@ This action also support a concept of top branches. A simple configuration of th
       - main
 ```
 
-If `topBranches` is specified, the action assumes there will be an an index-top.html file
-created in the `folderToDeploy`. The index-top.html should reference its dependencies
+If `topBranches` is specified, the action assumes there will be an an `index-top.html` file
+created in the `folderToDeploy`. The `index-top.html` should reference its dependencies
 using a prefix of `branch/[branch-name]/` or `version/[tag-name]/`. This way the
-index-top.html can be copied up two levels and still be able to find its resources.
+`index-top.html` can be copied up two levels and still be able to find its resources.
 The build command is passed this prefix in an environment variable named `DEPLOY_PATH`.
 
 The list of branches in `topBranches` will have their `index-top.html` file copied and
