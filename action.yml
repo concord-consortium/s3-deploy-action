@@ -29,12 +29,14 @@ inputs:
     required: false
   folderToDeploy:
     description: the folder created by the build command that should be deployed.
-      It is relative to the workdingDirectory if that is set.
+      It is relative to the workingDirectory if that is set.
       Default is 'dist'
     required: false
 outputs:
   deployPath:
-    description: 'The location where the files will be stored'
+    description: An additional path added to the prefix.
+      If it is a tag build it will be '/version/{tag-name}'.
+      If it is a branch build it will be '/branch/{branch-name}'.
 runs:
   using: 'node12'
   main: 'dist/index.js'
