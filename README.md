@@ -46,8 +46,8 @@ This action also supports a concept of top branches. A simple configuration of t
     prefix: name-of-project
     awsAccessKeyId: ${{ secrets.AWS_ACCESS_KEY_ID }}
     awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    topBranches:
-      - main
+    topBranches: >
+      [ "main" ]
 ```
 
 If `topBranches` is specified, the action assumes there will be an an `index-top.html` file
