@@ -202,7 +202,7 @@ function s3Update(options) {
         // Now copy all of the index and index-top files, again a pattern is used to support
         // mono-repos with sub folders
         const noCache = `--cache-control "no-cache, max-age=0"`;
-        const filters = `--exclude "*" --include "*index.html --include "*index-top.html"`;
+        const filters = `--exclude "*" --include "*index.html" --include "*index-top.html"`;
         yield exec.exec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
         if (topBranchesJSON) {
             const topBranches = JSON.parse(topBranchesJSON);
