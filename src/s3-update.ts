@@ -1,6 +1,4 @@
 import * as exec from "@actions/exec";
-import path from "path";
-import process from "process";
 import glob from "glob";
 
 export interface S3UpdateOptions {
