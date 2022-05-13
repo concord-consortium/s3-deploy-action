@@ -36,8 +36,45 @@ The folder where the build command is run can be overridden with `workingDirecto
 The folder that is copied to S3 can be overridden with `folderToDeploy`. Its value is
 relative to the `workingDirectory`.
 
-## Top Branch Example
-This action also supports a concept of top branches. A simple configuration of this is:
+## Versioned Release Support 
+This action also supports a concept of releasing versions in S3 without copying all the resources. A typical non-S3 version release process would use symlinks, but those are not supported in S3.
+
+Versioned releases are done by copying a special index-top.html file out of the versioned folder up to the top level.
+
+An example folder structure when v1.0.0 has been released would be:
+- index.html
+- versions
+  - v1.0.0
+    - index.html
+    - index-top.html
+    - code.js
+
+### `/index.html` 
+This is the released html file. If v1.0.0 is released then `/index.html` is a copy of `/versions/v1.0.0/index-top.html`. The `index-top.html` file cannot be used directly it must be copied to the top before it can be used.
+
+### `/versions/v1.0.0/index.html` 
+This file can be used to run the version without copying anything. This is useful when there are multiple deployed versions and only one is released.
+
+The content of `/versions/v1.0.0/index.html` refers to `code.js` using a relative reference of just `code.js`. 
+
+### `/versions/v1.0.0/index-top.html`
+This file is copied when doing a release. Its content refers to `code.js` using a relative reference of `versions/v1.0.0/code.js`. This is why `index-top.html` needs to be copied before it can work.
+
+`s3-deploy-action` makes building the `index-top.html` possible by providing a `DEPLOY_PATH` environment variable when it runs the build command. When `s3-deploy-action` is deploying the tag `v1.0.0` it will set this to `DEPLOY_PATH=versions/v1.0.0`.
+
+If you are using Webpack's HtmlWebpackPlugin to build your index-top.html file you can make this work by configuring HtmlWebpackPlugin with `publicPath: process.env.DEPLOY_PATH`.
+
+One issue you will have to deal with when using the versioned approach is when code.js loads its own resources. It might load json files or icons. By default if it uses relative paths to do this, these paths will be relative to the html file not the js file. If you are using Webpack, it has a `publicPath:auto` option which takes care of this. This is a different `publicPath` than the one for HtmlWebpackPlugin. As long as all resources are accessed via `import` webpack will take care of loading them relative to the location of `code.js`. 
+
+**TODO** make a separate doc about using webpack. A good bit of doc to start with is here: https://github.com/concord-consortium/starter-projects/blob/b2f267ee0a4fff52a60f55132d9d70ee4825ae7f/doc/deploy.md 
+
+### Caching
+Because the index files have their max-age set to 0, when they are copied to the top level this change will appear immediately in browsers requesting the file even if they have requested it before.
+
+## Top Branches
+Because the released index.html changes the path javascript uses to access assets, you won't see issues caused by this when using a file like `branch/main/index.html`. To make it possible to test this in advance, `s3-deploy-action` supports something called 'top branches'.
+
+A simple configuration of this is:
 
 ```
 - uses: concord-consortium/s3-deploy-action@v1
@@ -50,24 +87,58 @@ This action also supports a concept of top branches. A simple configuration of t
       [ "main" ]
 ```
 
-If `topBranches` is specified, the action assumes there will be an an `index-top.html` file
-created in the `folderToDeploy`. The `index-top.html` should reference its dependencies
-using a prefix of `branch/[branch-name]/` or `version/[tag-name]/`. This way the
-`index-top.html` can be copied up two levels and still be able to find its resources.
-The build command is passed this prefix in an environment variable named `DEPLOY_PATH`.
+If `topBranches` is specified, the action assumes there will be an an `index-top.html` file. This `index-top.html` should follow the approach described above to reference its dependencies. 
 
-The list of branches in `topBranches` will have their `index-top.html` file copied and
-renamed with the branch name.
-So in this case, if the main branch is pushed,
-`models-resources/name-of-project/branch/main/index-top.html` will be copied
-to `models-resources/name-of-project/index-main.html`
+When one of the branches listed in `topBranches` is deployed, the action will automatically copy the `index-top.html` file to the top level and rename it with the branch name. So in the configuration above, if the main branch is pushed, `/branch/main/index-top.html` will be copied to `/index-main.html`.
 
-Because the index files have their max-age set to 0, when they are copied to the top level
-this change will appear immediately in browsers requesting the file even if they have
-requested it before. 
+Now `/index-main.html` can be opened and you can make sure that all of the assets are loading properly.
+
+Because the index files have their max-age set to 0, when they are copied to the top level this change will appear immediately in browsers requesting the file even if they have requested it before. 
 
 You can see an example of this being used in this PR:
 https://github.com/concord-consortium/starter-projects/pull/37
+
+## Mono Repo Support
+This action supports certain mono-repo setups.  In particular if your repo generates a top level index.html file that refers to sub folder index.html files. The action will copy all files that match index.html or index-top.html to S3 with max-age of 0. So this includes files in sub folders. 
+
+To support releasing versions, the `sub-folder/index-top.html` files need to have relative paths to their resources which will work when the file is copied to the top level. Here is an example folder structure when v1.0.0 is released:
+- index.html (copy of version/v1.0.0/index-top.html)
+- sub-folder
+  - index.html (copy of version/v1.0.0/sub-folder/index-top.html)
+- version
+  - v1.0.0
+    - index.html
+    - index-top.html
+    - sub-folder
+      - index.html
+      - index-top.html
+      - code.js
+
+So this means that the reference to the code.js in sub-folder/index-top.html should be `../version/v1.0.0/sub-folder/code.js`
+
+If you are using webpack's HtmlWebpackPlugin to build the `sub-folder/index-top.html`, you can set `` publicPath: `../${DEPLOY_PATH}/sub-folder` ``. When the project is built by s3-deploy-action DEPLOY_PATH will be set to `version/v1.0.0`.
+
+### Top Branch Support in Mono Repos
+s3-deploy-action supports top branches in mono repos by copying all `index-top.html` files to the top level and renaming them `index-[branch name].html`. It will do this regardless of what level the index-top.html is at. 
+
+For example:
+- index-main.html (copy of branch/main/index-top.html)
+- sub-folder
+  - index-main.html (copy of branch/main/sub-folder/index-top.html)
+- branch
+  - main
+    - index.html
+    - index-top.html
+    - sub-folder
+      - index.html
+      - index-top.html
+      - code.js
+
+However for this to work, it means that the top-level index-top.html file needs to figure out that it should be referencing `sub-folder/index-main.html`. This same index-top.html file has to work when it is built for a version, and then copied to the top level. 
+
+There are a few ways to support this. One of them is to have some javascript in this file which looks at its own URL. If the file name is `index-[something].html` then it should update the references in its dom to be `sub-folder/index-[something].html`.
+
+Another option is for the build system to identify that this is a branch build instead of a version build. It can do this by checking the `DEPLOY_PATH` environment variable. For version builds it uses `sub-folder/index.html` for branch builds it uses `sub-folder/index-[branch].html`.
 
 # Develop
 

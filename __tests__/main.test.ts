@@ -1,8 +1,4 @@
 jest.mock('@actions/exec');
-jest.mock('fs', () => ({
-  ...jest.requireActual('fs'),
-  existsSync: jest.fn().mockReturnValue(true)
-}));
 
 import {getDeployProps} from '../src/deploy-props'
 import {s3Update} from '../src/s3-update'
@@ -48,14 +44,13 @@ test('basic s3Update with branch calls correct sync and copy commands', async ()
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
-    localFolder: 'dist'
+    localFolder: 'test-dist-folders/basic'
   });
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
-    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
-    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"']
   ]);
 })
 
@@ -65,31 +60,13 @@ test('basic s3Update with version calls correct sync and copy commands', async (
     version: 'v1.2.3',
     bucket: 'test-bucket',
     prefix: 'fake-app',
-    localFolder: 'dist'
+    localFolder: 'test-dist-folders/basic'
   });
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=31536000"'],
-    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"'],
-    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"']
-  ]);
-})
-
-test('basic s3Update with version and localFolder calls correct sync and copy commands', async () => {
-  await s3Update({
-    deployPath: 'version/v1.2.3',
-    version: 'v1.2.3',
-    bucket: 'test-bucket',
-    prefix: 'fake-app',
-    localFolder: 'fake-folder'
-  });
-
-  const execMock = (exec.exec as any).mock;
-  expect(execMock.calls).toEqual([
-    ['aws s3 sync ./fake-folder s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=31536000"'],
-    ['aws s3 cp ./fake-folder/index.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"'],
-    ['aws s3 cp ./fake-folder/index-top.html s3://test-bucket/fake-app/version/v1.2.3/ --cache-control "no-cache, max-age=0"']
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=31536000"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/fake-app/version/v1.2.3 --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"']
   ]);
 })
 
@@ -99,16 +76,34 @@ test('s3Update with matching top branch calls correct sync and copy commands', a
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
-    localFolder: 'dist',
+    localFolder: 'test-dist-folders/basic',
     topBranchesJSON: '["test-branch", "main"]'
   });
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
-    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
-    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"'],
     ['aws s3 cp s3://test-bucket/fake-app/branch/test-branch/index-top.html s3://test-bucket/fake-app/index-test-branch.html']
+  ]);
+})
+
+test('s3Update with matching top branch and mono-repo calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    localFolder: 'test-dist-folders/mono-repo',
+    topBranchesJSON: '["test-branch", "main"]'
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./test-dist-folders/mono-repo s3://test-bucket/fake-app/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/mono-repo s3://test-bucket/fake-app/branch/test-branch --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"'],
+    ['aws s3 cp s3://test-bucket/fake-app/branch/test-branch/index-top.html s3://test-bucket/fake-app/index-test-branch.html'],
+    ['aws s3 cp s3://test-bucket/fake-app/branch/test-branch/sub-folder/index-top.html s3://test-bucket/fake-app/sub-folder/index-test-branch.html']
   ]);
 })
 
@@ -118,33 +113,31 @@ test('s3Update without matching top branch calls correct sync and copy commands'
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
-    localFolder: 'dist',
+    localFolder: 'test-dist-folders/basic',
     topBranchesJSON: '["main", "special-feature"]'
   });
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
-    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"'],
-    ['aws s3 cp ./dist/index-top.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/fake-app/branch/test-branch --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"'],
   ]);
 })
 
-test('s3Update without index-top.html calls correct sync and copy commands', async () => {
-  // mock out fs.execSync so it it always returns false, this is what s3Update is using
-  (fs as any).existsSync.mockReturnValue(false);
+test('s3Update with matching top branch but no index-top.html calls correct sync and copy commands', async () => {
   await s3Update({
     deployPath: 'branch/test-branch',
     branch: 'test-branch',
     bucket: 'test-bucket',
     prefix: 'fake-app',
-    localFolder: 'dist',
+    localFolder: 'test-dist-folders/no-index-top',
+    topBranchesJSON: '["main", "test-branch"]'
   });
 
   const execMock = (exec.exec as any).mock;
   expect(execMock.calls).toEqual([
-    ['aws s3 sync ./dist s3://test-bucket/fake-app/branch/test-branch --delete --exclude "index.html" --exclude "index-top.html" --cache-control "max-age=0"'],
-    ['aws s3 cp ./dist/index.html s3://test-bucket/fake-app/branch/test-branch/ --cache-control "no-cache, max-age=0"']
+    ['aws s3 sync ./test-dist-folders/no-index-top s3://test-bucket/fake-app/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/no-index-top s3://test-bucket/fake-app/branch/test-branch --recursive --exclude "*" --include "*index.html --include "*index-top.html" --cache-control "no-cache, max-age=0"'],
   ]);
 })
 
