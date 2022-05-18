@@ -1,5 +1,5 @@
 import * as exec from "@actions/exec";
-import * as fs from "fs";
+import glob from "glob";
 
 export interface S3UpdateOptions {
   deployPath: string,
@@ -34,24 +34,35 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
   const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
 
-  const excludes = `--exclude "index.html" --exclude "index-top.html"`;
+  // copy everything except the index and index-top files, delete anything remote
+  // that isn't present locally.
+  // "*index.html" is used to support mono-repos that have sub folders with index
+  // and index-top files.
+  const excludes = `--exclude "*index.html" --exclude "*index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
   await exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
+  // Now copy all of the index and index-top files, again a pattern is used to support
+  // mono-repos with sub folders
   const noCache = `--cache-control "no-cache, max-age=0"`;
-  const indexPath    = `${localFolder}/index.html`;
-  const indexTopPath = `${localFolder}/index-top.html`;
-
-  await exec.exec(`aws s3 cp ./${indexPath} ${deployS3Url}/ ${noCache}`);
-
-  if (fs.existsSync(indexTopPath)) {
-    await exec.exec(`aws s3 cp ./${indexTopPath} ${deployS3Url}/ ${noCache}`);
-  }
+  const filters = `--exclude "*" --include "*index.html" --include "*index-top.html"`;
+  await exec.exec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
 
   if (topBranchesJSON) {
     const topBranches = JSON.parse(topBranchesJSON);
     if (topBranches.includes(branch)) {
-      await exec.exec(`aws s3 cp ${deployS3Url}/index-top.html ${topLevelS3Url}/index-${branch}.html`);
+
+      // Find all folders that contain index-top.html files and then copy their
+      // remote versions to index-[branch].html
+      // This approach is used to support mono-reports that might have index-top.html files 
+      // in sub folders. The matchBase option tells glob to look for the file in all directories.
+      const files = glob.sync("index-top.html", {matchBase:true, cwd: localFolder});
+
+      for (const indexTopFile of files) {
+        const indexTopFolder = indexTopFile.replace(/index-top\.html$/, "");
+        // TODO: We could optimize this to run the copies in parallel
+        await exec.exec(`aws s3 cp ${deployS3Url}/${indexTopFolder}index-top.html ${topLevelS3Url}/${indexTopFolder}index-${branch}.html`);
+      }
     }
   }
 
