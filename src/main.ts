@@ -26,6 +26,7 @@ async function run(): Promise<void> {
 
     const bucket = core.getInput("bucket");
     const prefix = core.getInput("prefix");
+    const noPrefix = core.getInput("noPrefix") === "true"; // allows top level bucket deploys if true
     const topBranchesJSON = core.getInput("topBranches");
     const folderToDeploy = core.getInput("folderToDeploy");
     const localFolderParts = [];
@@ -34,7 +35,7 @@ async function run(): Promise<void> {
     }
     localFolderParts.push(folderToDeploy || "dist");
     const localFolder = localFolderParts.join("/");
-    if (bucket && prefix) {
+    if (bucket && (prefix || noPrefix)) {
       process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
       process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
       process.env.AWS_DEFAULT_REGION = "us-east-1";
@@ -45,6 +46,7 @@ async function run(): Promise<void> {
         branch,
         bucket,
         prefix,
+        noPrefix,
         topBranchesJSON,
         localFolder });
     }

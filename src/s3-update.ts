@@ -8,7 +8,8 @@ export interface S3UpdateOptions {
   bucket: string,
   prefix: string,
   topBranchesJSON?: string,
-  localFolder: string
+  localFolder: string,
+  noPrefix?: boolean
 }
 
 const MAX_AGE_VERSION_SECS = 60*60*24*365;
@@ -28,9 +29,9 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   // However, branches are not intended for production use, so the occasional broken
   // branch does not seem worth fixing.
 
-  const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder} = options;
+  const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder, noPrefix} = options;
 
-  const topLevelS3Url = `s3://${bucket}/${prefix}`;
+  const topLevelS3Url = noPrefix ? `s3://${bucket}` : `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
   const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
 
@@ -54,7 +55,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
 
       // Find all folders that contain index-top.html files and then copy their
       // remote versions to index-[branch].html
-      // This approach is used to support mono-reports that might have index-top.html files 
+      // This approach is used to support mono-reports that might have index-top.html files
       // in sub folders. The matchBase option tells glob to look for the file in all directories.
       const files = glob.sync("index-top.html", {matchBase:true, cwd: localFolder});
 

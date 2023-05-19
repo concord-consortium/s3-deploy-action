@@ -141,6 +141,23 @@ test('s3Update with matching top branch but no index-top.html calls correct sync
   ]);
 })
 
+test('s3Update with noPrefix option set calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'branch/test-branch',
+    branch: 'test-branch',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    noPrefix: true,
+    localFolder: 'test-dist-folders/basic'
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/branch/test-branch --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=0"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/branch/test-branch --recursive --exclude "*" --include "*index.html" --include "*index-top.html" --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
 // Test the action using the env / stdout protocol
 test('test runs', () => {
   process.env['GITHUB_REF'] = "refs/heads/test-branch";
