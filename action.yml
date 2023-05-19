@@ -14,6 +14,9 @@ inputs:
   prefix:
     description: S3 prefix to prepend to files uploaded to S3
     required: true
+  noPrefix:
+    description: If "true" the prefix is not used for the top level bucket
+    required: false
   topBranches:
     description: A JSON array of branch names (without PT number) for which the
       index-top.html file will be copied to the top. The file name will be
