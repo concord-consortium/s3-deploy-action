@@ -70,6 +70,23 @@ test('basic s3Update with version calls correct sync and copy commands', async (
   ]);
 })
 
+test('basic s3Update with optional maxAge option calls correct sync and copy commands', async () => {
+  await s3Update({
+    deployPath: 'version/v1.2.3',
+    version: 'v1.2.3',
+    bucket: 'test-bucket',
+    prefix: 'fake-app',
+    localFolder: 'test-dist-folders/basic',
+    maxAge: 600
+  });
+
+  const execMock = (exec.exec as any).mock;
+  expect(execMock.calls).toEqual([
+    ['aws s3 sync ./test-dist-folders/basic s3://test-bucket/fake-app/version/v1.2.3 --delete --exclude "*index.html" --exclude "*index-top.html" --cache-control "max-age=600"'],
+    ['aws s3 cp ./test-dist-folders/basic s3://test-bucket/fake-app/version/v1.2.3 --recursive --exclude "*" --include "*index.html" --include "*index-top.html" --cache-control "no-cache, max-age=0"']
+  ]);
+})
+
 test('s3Update with matching top branch calls correct sync and copy commands', async () => {
   await s3Update({
     deployPath: 'branch/test-branch',
