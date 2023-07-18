@@ -35,6 +35,11 @@ inputs:
       It is relative to the workingDirectory if that is set.
       Default is 'dist'
     required: false
+  maxAge:
+    description: If present (and it is a valid decimal value) it will be used as the
+      max-age parameter for the aws sync command when copying files.  This overrides
+      the built-in values for version and branch deploys.
+    required: false
 outputs:
   deployPath:
     description: An additional path added to the prefix.
