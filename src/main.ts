@@ -35,7 +35,11 @@ async function run(): Promise<void> {
     }
     localFolderParts.push(folderToDeploy || "dist");
     const localFolder = localFolderParts.join("/");
-    const maxAge = parseInt(core.getInput("maxAge"), 10) || 0;
+
+    let maxAge: number|undefined = parseInt(core.getInput("maxAge"), 10);
+    if (isNaN(maxAge)) {
+      maxAge = undefined;
+    }
 
     if (bucket && (prefix || noPrefix)) {
       process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");

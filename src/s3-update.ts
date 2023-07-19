@@ -34,7 +34,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
 
   const topLevelS3Url = noPrefix ? `s3://${bucket}` : `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-  const maxAgeSecs = maxAge || (version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS);
+  const maxAgeSecs = maxAge ?? (version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS);
 
   // copy everything except the index and index-top files, delete anything remote
   // that isn't present locally.
