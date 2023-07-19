@@ -9,7 +9,8 @@ export interface S3UpdateOptions {
   prefix: string,
   topBranchesJSON?: string,
   localFolder: string,
-  noPrefix?: boolean
+  noPrefix?: boolean,
+  maxAge?: number,
 }
 
 const MAX_AGE_VERSION_SECS = 60*60*24*365;
@@ -29,11 +30,11 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   // However, branches are not intended for production use, so the occasional broken
   // branch does not seem worth fixing.
 
-  const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder, noPrefix} = options;
+  const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder, noPrefix, maxAge} = options;
 
   const topLevelS3Url = noPrefix ? `s3://${bucket}` : `s3://${bucket}/${prefix}`;
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-  const maxAgeSecs = version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
+  const maxAgeSecs = maxAge ?? (version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS);
 
   // copy everything except the index and index-top files, delete anything remote
   // that isn't present locally.

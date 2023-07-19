@@ -35,6 +35,12 @@ async function run(): Promise<void> {
     }
     localFolderParts.push(folderToDeploy || "dist");
     const localFolder = localFolderParts.join("/");
+
+    let maxAge: number|undefined = parseInt(core.getInput("maxAge"), 10);
+    if (isNaN(maxAge)) {
+      maxAge = undefined;
+    }
+
     if (bucket && (prefix || noPrefix)) {
       process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
       process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
@@ -48,7 +54,9 @@ async function run(): Promise<void> {
         prefix,
         noPrefix,
         topBranchesJSON,
-        localFolder });
+        localFolder,
+        maxAge
+       });
     }
 
   } catch (error) {
