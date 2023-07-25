@@ -46,7 +46,7 @@ async function run(): Promise<void> {
       process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
       process.env.AWS_DEFAULT_REGION = "us-east-1";
 
-      await s3Update({
+      const options = {
         deployPath,
         version,
         branch,
@@ -56,7 +56,11 @@ async function run(): Promise<void> {
         topBranchesJSON,
         localFolder,
         maxAge
-       });
+      };
+
+      core.info(`Calling s3Update with: ${JSON.stringify(options)}`);
+
+      await s3Update(options);
     }
 
   } catch (error) {
