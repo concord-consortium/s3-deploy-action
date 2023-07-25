@@ -113,11 +113,15 @@ function run() {
             }
             localFolderParts.push(folderToDeploy || "dist");
             const localFolder = localFolderParts.join("/");
+            let maxAge = parseInt(core.getInput("maxAge"), 10);
+            if (isNaN(maxAge)) {
+                maxAge = undefined;
+            }
             if (bucket && (prefix || noPrefix)) {
                 process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
                 process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
                 process.env.AWS_DEFAULT_REGION = "us-east-1";
-                yield (0, s3_update_1.s3Update)({
+                const options = {
                     deployPath,
                     version,
                     branch,
@@ -125,8 +129,11 @@ function run() {
                     prefix,
                     noPrefix,
                     topBranchesJSON,
-                    localFolder
-                });
+                    localFolder,
+                    maxAge
+                };
+                core.info(`Calling s3Update with: ${JSON.stringify(options)}`);
+                yield (0, s3_update_1.s3Update)(options);
             }
         }
         catch (error) {
@@ -183,6 +190,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.s3Update = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const glob_1 = __importDefault(__nccwpck_require__(1957));
+const core = __importStar(__nccwpck_require__(2186));
 const MAX_AGE_VERSION_SECS = 60 * 60 * 24 * 365;
 const MAX_AGE_BRANCH_SECS = 0;
 // Upload dist folder to the S3 bucket with the prefix followed by the deployPath
@@ -198,22 +206,26 @@ function s3Update(options) {
         // minutes later.
         // However, branches are not intended for production use, so the occasional broken
         // branch does not seem worth fixing.
-        const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder, noPrefix } = options;
+        const { deployPath, version, branch, bucket, prefix, topBranchesJSON, localFolder, noPrefix, maxAge } = options;
         const topLevelS3Url = noPrefix ? `s3://${bucket}` : `s3://${bucket}/${prefix}`;
         const deployS3Url = `${topLevelS3Url}/${deployPath}`;
-        const maxAgeSecs = version ? MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS;
+        const maxAgeSecs = maxAge !== null && maxAge !== void 0 ? maxAge : (version ? MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS);
+        const logExec = (commandLine) => __awaiter(this, void 0, void 0, function* () {
+            core.info(`Running: ${commandLine}`);
+            return exec.exec(commandLine);
+        });
         // copy everything except the index and index-top files, delete anything remote
         // that isn't present locally.
         // "*index.html" is used to support mono-repos that have sub folders with index
         // and index-top files.
         const excludes = `--exclude "*index.html" --exclude "*index-top.html"`;
         const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-        yield exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+        yield logExec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
         // Now copy all of the index and index-top files, again a pattern is used to support
         // mono-repos with sub folders
         const noCache = `--cache-control "no-cache, max-age=0"`;
         const filters = `--exclude "*" --include "*index.html" --include "*index-top.html"`;
-        yield exec.exec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
+        yield logExec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
         if (topBranchesJSON) {
             const topBranches = JSON.parse(topBranchesJSON);
             if (topBranches.includes(branch)) {
@@ -225,7 +237,7 @@ function s3Update(options) {
                 for (const indexTopFile of files) {
                     const indexTopFolder = indexTopFile.replace(/index-top\.html$/, "");
                     // TODO: We could optimize this to run the copies in parallel
-                    yield exec.exec(`aws s3 cp ${deployS3Url}/${indexTopFolder}index-top.html ${topLevelS3Url}/${indexTopFolder}index-${branch}.html`);
+                    yield logExec(`aws s3 cp ${deployS3Url}/${indexTopFolder}index-top.html ${topLevelS3Url}/${indexTopFolder}index-${branch}.html`);
                 }
             }
         }
