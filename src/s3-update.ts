@@ -1,5 +1,6 @@
 import * as exec from "@actions/exec";
 import glob from "glob";
+import * as core from "@actions/core";
 
 export interface S3UpdateOptions {
   deployPath: string,
@@ -36,19 +37,24 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
   const deployS3Url = `${topLevelS3Url}/${deployPath}`;
   const maxAgeSecs = maxAge ?? (version ?  MAX_AGE_VERSION_SECS : MAX_AGE_BRANCH_SECS);
 
+  const logExec = async (commandLine: string) => {
+    core.info(`Running: ${commandLine}`);
+    return exec.exec(commandLine);
+  };
+
   // copy everything except the index and index-top files, delete anything remote
   // that isn't present locally.
   // "*index.html" is used to support mono-repos that have sub folders with index
   // and index-top files.
   const excludes = `--exclude "*index.html" --exclude "*index-top.html"`;
   const cacheControl = `--cache-control "max-age=${maxAgeSecs}"`;
-  await exec.exec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
+  await logExec(`aws s3 sync ./${localFolder} ${deployS3Url} --delete ${excludes} ${cacheControl}`);
 
   // Now copy all of the index and index-top files, again a pattern is used to support
   // mono-repos with sub folders
   const noCache = `--cache-control "no-cache, max-age=0"`;
   const filters = `--exclude "*" --include "*index.html" --include "*index-top.html"`;
-  await exec.exec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
+  await logExec(`aws s3 cp ./${localFolder} ${deployS3Url} --recursive ${filters} ${noCache}`);
 
   if (topBranchesJSON) {
     const topBranches = JSON.parse(topBranchesJSON);
@@ -63,7 +69,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
       for (const indexTopFile of files) {
         const indexTopFolder = indexTopFile.replace(/index-top\.html$/, "");
         // TODO: We could optimize this to run the copies in parallel
-        await exec.exec(`aws s3 cp ${deployS3Url}/${indexTopFolder}index-top.html ${topLevelS3Url}/${indexTopFolder}index-${branch}.html`);
+        await logExec(`aws s3 cp ${deployS3Url}/${indexTopFolder}index-top.html ${topLevelS3Url}/${indexTopFolder}index-${branch}.html`);
       }
     }
   }
