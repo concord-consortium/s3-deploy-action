@@ -36,10 +36,15 @@ async function run(): Promise<void> {
     localFolderParts.push(folderToDeploy || "dist");
     const localFolder = localFolderParts.join("/");
 
-    let maxAge: number|undefined = parseInt(core.getInput("maxAge"), 10);
-    if (isNaN(maxAge)) {
-      maxAge = undefined;
+    let maxBranchAge: number|undefined = parseInt(core.getInput("maxBranchAge"), 10);
+    if (isNaN(maxBranchAge)) {
+      maxBranchAge = undefined;
     }
+    let maxVersionAge: number|undefined = parseInt(core.getInput("maxVersionAge"), 10);
+    if (isNaN(maxVersionAge)) {
+      maxVersionAge = undefined;
+    }
+    const maxAge = version ? maxVersionAge : (branch ? maxBranchAge : undefined);
 
     if (bucket && (prefix || noPrefix)) {
       process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");

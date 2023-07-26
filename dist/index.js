@@ -113,10 +113,15 @@ function run() {
             }
             localFolderParts.push(folderToDeploy || "dist");
             const localFolder = localFolderParts.join("/");
-            let maxAge = parseInt(core.getInput("maxAge"), 10);
-            if (isNaN(maxAge)) {
-                maxAge = undefined;
+            let maxBranchAge = parseInt(core.getInput("maxBranchAge"), 10);
+            if (isNaN(maxBranchAge)) {
+                maxBranchAge = undefined;
             }
+            let maxVersionAge = parseInt(core.getInput("maxVersionAge"), 10);
+            if (isNaN(maxVersionAge)) {
+                maxVersionAge = undefined;
+            }
+            const maxAge = version ? maxVersionAge : (branch ? maxBranchAge : undefined);
             if (bucket && (prefix || noPrefix)) {
                 process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
                 process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
