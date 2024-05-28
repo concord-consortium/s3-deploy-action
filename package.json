@@ -8,8 +8,8 @@
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "package": "npm-run-all package:*",
-    "package:main": "ncc build -o dist/main --source-map --license licenses.txt",
-    "package:deploy-path": "ncc build src/deploy-path.ts -o dist/deploy-path --source-map --license licenses.txt",
+    "package:main": "ncc build -o dist --source-map --license licenses.txt",
+    "package:deploy-path": "ncc build src/deploy-path.ts -o deploy-path/dist --source-map --license licenses.txt",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "all": "npm run lint && npm run build && npm test && npm run package"

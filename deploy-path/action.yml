@@ -8,4 +8,4 @@ outputs:
       If it is a branch build it will be '/branch/{branch-name}'.
 runs:
   using: 'node20'
-  main: 'dist/deploy-path/index.js'
+  main: 'dist/index.js'

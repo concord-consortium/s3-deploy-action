@@ -268,13 +268,13 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
 // Test the main action using the env / stdout protocol
 test("main action runs", () => {
   process.env["GITHUB_REF"] = "refs/heads/test-branch";
-  const ip = path.join(__dirname, "..", "dist", "main", "index.js");
+  const ip = path.join(__dirname, "..", "dist", "index.js");
   testActionOutput(ip, "branch/test-branch");
 });
 
 // Test the deploy-path action using the env / stdout protocol
 test("deploy-path action runs", () => {
   process.env["GITHUB_REF"] = "refs/heads/test-branch2";
-  const ip = path.join(__dirname, "..", "dist", "deploy-path", "index.js");
+  const ip = path.join(__dirname, "..", "deploy-path", "dist", "index.js");
   testActionOutput(ip, "branch/test-branch2");
 });
