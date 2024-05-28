@@ -1,0 +1,11 @@
+name: 'S3 Deploy Path'
+description: 'Calculate S3 deploy path, do not deploy'
+author: 'The Concord Consortium'
+outputs:
+  deployPath:
+    description: Path where the main S3 deploy action will put the files.
+      If it is a tag build it will be '/version/{tag-name}'.
+      If it is a branch build it will be '/branch/{branch-name}'.
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

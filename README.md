@@ -140,6 +140,23 @@ There are a few ways to support this. One of them is to have some javascript in 
 
 Another option is for the build system to identify that this is a branch build instead of a version build. It can do this by checking the `DEPLOY_PATH` environment variable. For version builds it uses `sub-folder/index.html` for branch builds it uses `sub-folder/index-[branch].html`.
 
+# Deploy Path Only Action
+
+This repository also contains an action which just computes the deploy path. It doesn't build or deploy anything. This is useful if you want to build your code in one job and then reuse that built code for all of your testing and then deploy the same code that you tested.
+
+A typical way to use this action is:
+
+```
+- uses: concord-consortium/s3-deploy-action/deploy-path@v1
+  id: s3-deploy-path
+- name: Build
+  run: npm run build
+  env:
+    DEPLOY_PATH: ${{ steps.s3-deploy-path.outputs.deployPath }}
+```
+
+
+
 # Develop
 
 > First, you'll need to have a reasonably modern version of `node` handy. This won't work with versions older than 9, for instance.
@@ -155,7 +172,7 @@ $ npm run all
 ```
 
 ## Tests
-The final test of `main.test.ts` runs the built version of the action. So in order for this test to pass you need to run `npm run build` before running `npm run test`.
+The final tests of `main.test.ts` run the built version of the actions. So in order for this test to pass you need to run `npm run package` before running `npm run test`.
 
 ## action.yml
 

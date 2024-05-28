@@ -101,6 +101,7 @@ function run() {
             // with this path
             process.env.DEPLOY_PATH = deployPath;
             yield (0, exec_1.exec)(build, [], execOptions);
+            // Output the deployPath so it can be used to generate a deploy url
             core.setOutput("deployPath", deployPath);
             const bucket = core.getInput("bucket");
             const prefix = core.getInput("prefix");
@@ -810,7 +811,7 @@ class OidcClient {
                 .catch(error => {
                 throw new Error(`Failed to get ID Token. \n 
         Error Code : ${error.statusCode}\n 
-        Error Message: ${error.result.message}`);
+        Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
             if (!id_token) {
