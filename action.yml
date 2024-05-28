@@ -51,5 +51,5 @@ outputs:
       If it is a tag build it will be '/version/{tag-name}'.
       If it is a branch build it will be '/branch/{branch-name}'.
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: 'node20'
+  main: 'dist/main/index.js'

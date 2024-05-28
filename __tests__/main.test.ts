@@ -246,23 +246,35 @@ test("s3Update with noPrefix option set calls correct sync and copy commands", a
   ]);
 });
 
-// Test the action using the env / stdout protocol
-test("test runs", () => {
-  process.env["GITHUB_REF"] = "refs/heads/test-branch";
+function testActionOutput(actionJSPath: string, deployPath: string) {
   const np = process.execPath;
-  const ip = path.join(__dirname, "..", "lib", "main.js");
   const options: cp.ExecFileSyncOptions = {
     env: process.env,
   };
-  const result = cp.execFileSync(np, [ip], options).toString();
+  const result = cp.execFileSync(np, [actionJSPath], options).toString();
 
   // Make sure the github commands of the action match what we expect
-  // However note that this approach has been deprecated:
+  // This stdout approach has been deprecated:
   // https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
+  // However, if the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
+  // continues to fallback to this stdout approach. Since the test doesn't have these
+  // things setup we just keep testing the stdout
   const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
-  expect(githubCommands).toMatchInlineSnapshot(`
-    Array [
-      "::set-output name=deployPath::branch/test-branch",
-    ]
-  `);
+  expect(githubCommands).toMatchObject(
+    [ `::set-output name=deployPath::${deployPath}` ]
+  );
+}
+
+// Test the main action using the env / stdout protocol
+test("main action runs", () => {
+  process.env["GITHUB_REF"] = "refs/heads/test-branch";
+  const ip = path.join(__dirname, "..", "dist", "main", "index.js");
+  testActionOutput(ip, "branch/test-branch");
+});
+
+// Test the deploy-path action using the env / stdout protocol
+test("deploy-path action runs", () => {
+  process.env["GITHUB_REF"] = "refs/heads/test-branch2";
+  const ip = path.join(__dirname, "..", "dist", "deploy-path", "index.js");
+  testActionOutput(ip, "branch/test-branch2");
 });

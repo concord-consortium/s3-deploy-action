@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map --license licenses.txt",
+    "package": "npm-run-all package:*",
+    "package:main": "ncc build -o dist/main --source-map --license licenses.txt",
+    "package:deploy-path": "ncc build src/deploy-path.ts -o dist/deploy-path --source-map --license licenses.txt",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "all": "npm run lint && npm run build && npm test && npm run package"
@@ -42,6 +44,7 @@
     "jest": "^26.6.3",
     "jest-circus": "^27.3.1",
     "js-yaml": "^4.1.0",
+    "npm-run-all": "^4.1.5",
     "prettier": "2.6.2",
     "ts-jest": "^26.5.6",
     "typescript": "^4.9.4"
