@@ -248,10 +248,6 @@ test("s3Update with noPrefix option set calls correct sync and copy commands", a
 
 function testActionOutput(actionJSPath: string, deployPath: string) {
   const np = process.execPath;
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env,
-  };
-  const result = cp.execFileSync(np, [actionJSPath], options).toString();
 
   // Make sure the github commands of the action match what we expect
   // This stdout approach has been deprecated:
@@ -260,6 +256,13 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
   // continues to fallback to this stdout approach. Since it is easy to test stdout we just
   // make sure this variable isn't set even when this test is running in GitHub actions
   process.env["GITHUB_OUTPUT"] = "";
+
+  const options: cp.ExecFileSyncOptions = {
+    env: process.env,
+  };
+
+  const result = cp.execFileSync(np, [actionJSPath], options).toString();
+
   const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
   expect(githubCommands).toMatchObject(
     [ `::set-output name=deployPath::${deployPath}` ]
