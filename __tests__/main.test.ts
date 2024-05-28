@@ -256,9 +256,10 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
   // Make sure the github commands of the action match what we expect
   // This stdout approach has been deprecated:
   // https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
-  // However, if the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
-  // continues to fallback to this stdout approach. Since the test doesn't have these
-  // things setup we just keep testing the stdout
+  // If the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
+  // continues to fallback to this stdout approach. Since it is easy to test stdout we just
+  // make sure this variable isn't set even when this test is running in GitHub actions
+  process.env["GITHUB_OUTPUT"] = "";
   const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
   expect(githubCommands).toMatchObject(
     [ `::set-output name=deployPath::${deployPath}` ]

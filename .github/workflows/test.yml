@@ -10,9 +10,13 @@ jobs:
           npm install
       - run: |
           npm run all
-  test: # make sure the actions work on a clean machine without intalling or building
+  test: # make sure the actions work on a clean machine without building
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./deploy-path/
+      # We don't need to even install for this one
+      - uses: ./deploy-path/ 
+      # We have to install before this one because it is going to try to build
+      - run: |
+          npm install
       - uses: ./
