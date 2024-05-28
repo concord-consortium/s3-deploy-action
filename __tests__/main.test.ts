@@ -249,16 +249,22 @@ test("s3Update with noPrefix option set calls correct sync and copy commands", a
 // Test the action using the env / stdout protocol
 test("test runs", () => {
   process.env["GITHUB_REF"] = "refs/heads/test-branch";
+
+  // Make sure the github commands of the action match what we expect
+  // This stdout approach has been deprecated:
+  // https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
+  // If the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
+  // continues to fallback to this stdout approach. Since it is easy to test stdout we just
+  // make sure this variable isn't set even when this test is running in GitHub actions
+  process.env["GITHUB_OUTPUT"] = "";
+
   const np = process.execPath;
-  const ip = path.join(__dirname, "..", "lib", "main.js");
+  const ip = path.join(__dirname, "..", "lib", "main.js");  
   const options: cp.ExecFileSyncOptions = {
     env: process.env,
   };
   const result = cp.execFileSync(np, [ip], options).toString();
 
-  // Make sure the github commands of the action match what we expect
-  // However note that this approach has been deprecated:
-  // https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
   const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
   expect(githubCommands).toMatchInlineSnapshot(`
     Array [
