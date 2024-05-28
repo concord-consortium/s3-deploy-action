@@ -12,7 +12,7 @@
     "package:deploy-path": "ncc build src/deploy-path.ts -o deploy-path/dist --source-map --license licenses.txt",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "all": "npm run lint && npm run build && npm test && npm run package"
+    "all": "npm run lint && npm run build && npm run package && npm test"
   },
   "repository": {
     "type": "git",
