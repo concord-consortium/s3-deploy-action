@@ -184,16 +184,30 @@ See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-
 
 See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
 
-## Publish to a distribution branch
+## Packaging
 
-Actions are run from GitHub repos so we need to checkin the packed dist folder.
+The action uses [ncc](https://github.com/zeit/ncc) to package the javascript into a single file. This prevents us from having to include the full node_modules folder in the repo. It also should make the action run slightly faster. 
 
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
+`ncc` was used by the template typescript action that this action started from. It seems to be a wrapper around webpack and doesn't require any of the complex configuration of webpack.
+
+The packaged files need to be checked in since actions are run from the GitHub repository files:
 ```bash
 $ npm run all
 $ git add dist
 $ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
+```
+
+## Publish a new version
+
+Actions are "published" by moving a tag. Moving tags is not something that should generally be done, but because actions are run from their GitHub repos it is a necessary evil.
+
+First add a tag for this specific version such as `v1.5.0`. This tag will not be moved. If a project wants to it can refer directly to this tag with `uses: concord-consortium/s3-deploy-action@v1.5.0`. However it is recommended to not do this, otherwise you'll have to update this version whenever a new minor version is released.
+
+So users can refer to the action with `@v1` we have a major version tag by that name. This tag has to be moved on every release. This can be done from the commandline with:
+
+```bash
+git tag -fa v1 -m "Update v1 tag"
+git push origin v1 --force
 ```
 
 The action is now published! :rocket:
