@@ -154,6 +154,9 @@ Build, test, and package for distribution
 $ npm run all
 ```
 
+## Tests
+The final test of `main.test.ts` runs the built version of the action. So in order for this test to pass you need to run `npm run build` before running `npm run test`.
+
 ## action.yml
 
 The action.yml defines the inputs and output for this action.

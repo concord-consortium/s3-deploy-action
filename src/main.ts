@@ -22,6 +22,8 @@ async function run(): Promise<void> {
     // with this path
     process.env.DEPLOY_PATH = deployPath;
     await exec(build, [], execOptions);
+
+    // Output the deployPath so it can be used to generate a deploy url
     core.setOutput("deployPath", deployPath);
 
     const bucket = core.getInput("bucket");
