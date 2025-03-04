@@ -10,13 +10,16 @@ export function getDeployProps(gitRefs: string): {deployPath: string, version?: 
     };
   }
   if (branch) {
-    const prefixStripMatch = branch.match(/^#?[0-9]{8,}-(.+)$/);
-    const suffixStripMatch = branch.match(/^(.+)-#?[0-9]{8,}$/);
+    const jiraPrefixStripMatch = branch.match(/^[A-Za-z]{2,}-[0-9]+-(.+)$/);
+    const pivotalPrefixStripMatch = branch.match(/^#?[0-9]{8,}-(.+)$/);
+    const pivotalSuffixStripMatch = branch.match(/^(.+)-#?[0-9]{8,}$/);
     let strippedBranch = branch;
-    if (prefixStripMatch) {
-      strippedBranch = prefixStripMatch[1];
-    } else if (suffixStripMatch) {
-      strippedBranch = suffixStripMatch[1];
+    if (jiraPrefixStripMatch) {
+      strippedBranch = jiraPrefixStripMatch[1];
+    } else if (pivotalPrefixStripMatch) {
+      strippedBranch = pivotalPrefixStripMatch[1];
+    } else if (pivotalSuffixStripMatch) {
+      strippedBranch = pivotalSuffixStripMatch[1];
     }
     return {
       deployPath: `branch/${strippedBranch}`,

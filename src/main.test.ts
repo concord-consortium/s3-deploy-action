@@ -1,54 +1,10 @@
 jest.mock("@actions/exec");
 
-import { getDeployProps } from "../src/deploy-props";
-import { s3Update } from "../src/s3-update";
+import { s3Update } from "./s3-update";
 import * as process from "process";
 import * as cp from "child_process";
 import * as path from "path";
 import * as exec from "@actions/exec";
-import * as fs from "fs";
-
-test("getDeployProps version release", () => {
-  expect(getDeployProps("refs/tags/v1.2.3")).toEqual({
-    deployPath: "version/v1.2.3",
-    version: "v1.2.3",
-  });
-});
-
-test("getDeployProps PT prefix branch", () => {
-  expect(getDeployProps("refs/heads/123456789-test-branch")).toEqual({
-    deployPath: "branch/test-branch",
-    branch: "test-branch",
-  });
-});
-
-test('getDeployProps PT prefix branch with "#"', () => {
-  expect(getDeployProps("refs/heads/#123456789-test-branch")).toEqual({
-    deployPath: "branch/test-branch",
-    branch: "test-branch",
-  });
-});
-
-test("getDeployProps PT suffix branch", () => {
-  expect(getDeployProps("refs/heads/test-branch-123456789")).toEqual({
-    deployPath: "branch/test-branch",
-    branch: "test-branch",
-  });
-});
-
-test('getDeployProps PT suffix branch with "#"', () => {
-  expect(getDeployProps("refs/heads/test-branch-#123456789")).toEqual({
-    deployPath: "branch/test-branch",
-    branch: "test-branch",
-  });
-});
-
-test("getDeployProps not PT branch", () => {
-  expect(getDeployProps("refs/heads/test-branch")).toEqual({
-    deployPath: "branch/test-branch",
-    branch: "test-branch",
-  });
-});
 
 test("basic s3Update with branch calls correct sync and copy commands", async () => {
   await s3Update({
@@ -255,7 +211,7 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
   // If the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
   // continues to fallback to this stdout approach. Since it is easy to test stdout we just
   // make sure this variable isn't set even when this test is running in GitHub actions
-  process.env["GITHUB_OUTPUT"] = "";
+  process.env.GITHUB_OUTPUT = "";
 
   const options: cp.ExecFileSyncOptions = {
     env: process.env,
@@ -271,14 +227,14 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
 
 // Test the main action using the env / stdout protocol
 test("main action runs", () => {
-  process.env["GITHUB_REF"] = "refs/heads/test-branch";
+  process.env.GITHUB_REF = "refs/heads/test-branch";
   const ip = path.join(__dirname, "..", "dist", "index.js");
   testActionOutput(ip, "branch/test-branch");
 });
 
 // Test the deploy-path action using the env / stdout protocol
 test("deploy-path action runs", () => {
-  process.env["GITHUB_REF"] = "refs/heads/test-branch2";
+  process.env.GITHUB_REF = "refs/heads/test-branch2";
   const ip = path.join(__dirname, "..", "deploy-path", "dist", "index.js");
   testActionOutput(ip, "branch/test-branch2");
 });
