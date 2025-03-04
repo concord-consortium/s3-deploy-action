@@ -10,7 +10,7 @@ export function getDeployProps(gitRefs: string): {deployPath: string, version?: 
     };
   }
   if (branch) {
-    const jiraPrefixStripMatch = branch.match(/^[A-Z]{2,}-[0-9]+-(.+)$/);
+    const jiraPrefixStripMatch = branch.match(/^[A-Za-z]{2,}-[0-9]+-(.+)$/);
     const pivotalPrefixStripMatch = branch.match(/^#?[0-9]{8,}-(.+)$/);
     const pivotalSuffixStripMatch = branch.match(/^(.+)-#?[0-9]{8,}$/);
     let strippedBranch = branch;

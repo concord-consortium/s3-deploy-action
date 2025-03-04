@@ -48,6 +48,14 @@ describe("getDeployProps", () => {
         deployPath: "branch/test-branch",
         branch: "test-branch",
       });
+      expect(getDeployProps("refs/heads/proj-123-test-branch")).toEqual({
+        deployPath: "branch/test-branch",
+        branch: "test-branch",
+      });
+      expect(getDeployProps("refs/heads/Proj-123-test-branch")).toEqual({
+        deployPath: "branch/test-branch",
+        branch: "test-branch",
+      });
     });    
   });
 
