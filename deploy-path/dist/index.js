@@ -2760,7 +2760,9 @@ catch (error) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getDeployProps = void 0;
 function getDeployProps(refOverride) {
-    const ref = refOverride || process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF;
+    const headRefName = process.env.GITHUB_HEAD_REF;
+    const headRef = headRefName && `/refs/heads/${headRefName}`;
+    const ref = refOverride || headRef || process.env.GITHUB_REF;
     const versionMatch = ref === null || ref === void 0 ? void 0 : ref.match(/refs\/tags\/(.*)/);
     const version = versionMatch && versionMatch[1];
     const branchMatch = ref === null || ref === void 0 ? void 0 : ref.match(/refs\/heads\/(.*)/);

@@ -268,7 +268,7 @@ describe("built actions run using env / stdout protocol", () => {
           // Pass the build input is parameter
           INPUT_BUILD: "echo no build",
           GITHUB_REF: "refs/pull/123/merge",
-          GITHUB_HEAD_REF: "refs/heads/test-branch2",
+          GITHUB_HEAD_REF: "test-branch2",
         },
         "branch/test-branch2");
     });
@@ -290,7 +290,7 @@ describe("built actions run using env / stdout protocol", () => {
         indexPath, 
         {
           GITHUB_REF: "refs/pull/123/merge",
-          GITHUB_HEAD_REF: "refs/heads/test-branch2",
+          GITHUB_HEAD_REF: "test-branch2",
         },
         "branch/test-branch2");
     });

@@ -21,7 +21,9 @@
 // }
 
 export function getDeployProps(refOverride?: string): {deployPath: string, version?: string, branch?: string} {
-  const ref = refOverride || process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF;
+  const headRefName = process.env.GITHUB_HEAD_REF;
+  const headRef = headRefName && `/refs/heads/${headRefName}`;
+  const ref = refOverride || headRef || process.env.GITHUB_REF;
   const versionMatch = ref?.match(/refs\/tags\/(.*)/);
   const version = versionMatch && versionMatch[1];
   const branchMatch = ref?.match(/refs\/heads\/(.*)/);
