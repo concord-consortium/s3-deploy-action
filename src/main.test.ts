@@ -2,7 +2,7 @@ jest.mock("@actions/exec");
 
 import { s3Update } from "./s3-update";
 import * as process from "process";
-import * as cp from "child_process";
+import * as childProcess from "child_process";
 import * as path from "path";
 import * as exec from "@actions/exec";
 
@@ -202,7 +202,11 @@ test("s3Update with noPrefix option set calls correct sync and copy commands", a
   ]);
 });
 
-function testActionOutput(actionJSPath: string, deployPath: string) {
+function testActionOutput(
+  actionJSPath: string,
+  environment: Record<string, string>,
+  deployPath: string
+) {
   const np = process.execPath;
 
   // Make sure the github commands of the action match what we expect
@@ -211,30 +215,85 @@ function testActionOutput(actionJSPath: string, deployPath: string) {
   // If the new GITHUB_OUTPUT variable and file doesn't exist, then the core library
   // continues to fallback to this stdout approach. Since it is easy to test stdout we just
   // make sure this variable isn't set even when this test is running in GitHub actions
-  process.env.GITHUB_OUTPUT = "";
-
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env,
+  const env = {
+    ...environment,
+    GITHUB_OUTPUT: ""
   };
 
-  const result = cp.execFileSync(np, [actionJSPath], options).toString();
+  const options: childProcess.ExecFileSyncOptions = {
+    env,
+  };
 
-  const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
-  expect(githubCommands).toMatchObject(
-    [ `::set-output name=deployPath::${deployPath}` ]
-  );
+  try {
+    const result = childProcess.execFileSync(np, [actionJSPath], options).toString();
+
+    const githubCommands = result.split("\n").filter((line) => line.startsWith("::"));
+    expect(githubCommands).toMatchObject(
+      [ `::set-output name=deployPath::${deployPath}` ]
+    );
+  } catch (error) {
+    if ((error as any).stdout) {
+      console.log("Error running command\n", (error as any).stdout.toString());
+    } else {
+      console.log("Error running command", error);
+    }
+    fail("Error running command");
+  }
 }
 
-// Test the main action using the env / stdout protocol
-test("main action runs", () => {
-  process.env.GITHUB_REF = "refs/heads/test-branch";
-  const ip = path.join(__dirname, "..", "dist", "index.js");
-  testActionOutput(ip, "branch/test-branch");
-});
+// This test runs against the built version of the code so you need to run
+// `npm run build` and `npm run package` first 
+describe("built actions run using env / stdout protocol", () => {
+  describe("main action", () => {
+    const indexPath = path.join(__dirname, "..", "dist", "index.js");
+    test("running in a push event on a branch", () => {
+      testActionOutput(
+        indexPath, 
+        {
+          // The path is needed so the build command below will run
+          PATH: process.env.PATH!,
+          // Pass the build input as an env variable
+          INPUT_BUILD: "echo no build",
+          GITHUB_REF: "refs/heads/test-branch",
+        },
+        "branch/test-branch");
+    });
 
-// Test the deploy-path action using the env / stdout protocol
-test("deploy-path action runs", () => {
-  process.env.GITHUB_REF = "refs/heads/test-branch2";
-  const ip = path.join(__dirname, "..", "deploy-path", "dist", "index.js");
-  testActionOutput(ip, "branch/test-branch2");
+    test("running in a pull_request event on a branch", () => {
+      testActionOutput(
+        indexPath, 
+        {
+          // The path is needed so the build command below will run
+          PATH: process.env.PATH!,
+          // Pass the build input as an env variable
+          INPUT_BUILD: "echo no build",
+          GITHUB_REF: "refs/pull/123/merge",
+          GITHUB_HEAD_REF: "test-branch2",
+        },
+        "branch/test-branch2");
+    });
+  });
+  
+  describe("deploy-path action", () => {
+    const indexPath = path.join(__dirname, "..", "deploy-path", "dist", "index.js");
+    test("running in a push event on a branch", () => {
+      testActionOutput(
+        indexPath, 
+        {
+          GITHUB_REF: "refs/heads/test-branch2",
+        },
+        "branch/test-branch2");
+    });
+  
+    test("running in a pull_request event on a branch", () => {
+      testActionOutput(
+        indexPath, 
+        {
+          GITHUB_REF: "refs/pull/123/merge",
+          GITHUB_HEAD_REF: "test-branch2",
+        },
+        "branch/test-branch2");
+    });
+  });
+  
 });

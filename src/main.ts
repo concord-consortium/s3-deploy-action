@@ -1,5 +1,4 @@
 import * as core from "@actions/core";
-import {context} from "@actions/github";
 import {exec, ExecOptions} from "@actions/exec";
 import {getDeployProps} from "./deploy-props";
 import {s3Update} from "./s3-update";
@@ -7,7 +6,7 @@ import * as process from "process";
 
 async function run(): Promise<void> {
   try {
-    const {deployPath, version, branch} = getDeployProps(context.ref);
+    const {deployPath, version, branch} = getDeployProps();
     core.info(`deployPath: ${deployPath}`);
 
     const workingDirectory = core.getInput("workingDirectory");
