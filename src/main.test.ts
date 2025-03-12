@@ -250,9 +250,9 @@ describe("built actions run using env / stdout protocol", () => {
       testActionOutput(
         indexPath, 
         {
-          // The path is needed to so the build command below will run
+          // The path is needed so the build command below will run
           PATH: process.env.PATH!,
-          // Pass the build input is parameter
+          // Pass the build input as an env variable
           INPUT_BUILD: "echo no build",
           GITHUB_REF: "refs/heads/test-branch",
         },
@@ -263,9 +263,9 @@ describe("built actions run using env / stdout protocol", () => {
       testActionOutput(
         indexPath, 
         {
-          // The path is needed to so the build command below will run
+          // The path is needed so the build command below will run
           PATH: process.env.PATH!,
-          // Pass the build input is parameter
+          // Pass the build input as an env variable
           INPUT_BUILD: "echo no build",
           GITHUB_REF: "refs/pull/123/merge",
           GITHUB_HEAD_REF: "test-branch2",
