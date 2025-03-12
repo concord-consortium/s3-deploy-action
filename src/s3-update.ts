@@ -1,5 +1,5 @@
 import * as exec from "@actions/exec";
-import glob from "glob";
+import { globSync } from "glob";
 import * as core from "@actions/core";
 
 export interface S3UpdateOptions {
@@ -64,7 +64,7 @@ export async function s3Update(options: S3UpdateOptions): Promise<void> {
       // remote versions to index-[branch].html
       // This approach is used to support mono-reports that might have index-top.html files
       // in sub folders. The matchBase option tells glob to look for the file in all directories.
-      const files = glob.sync("index-top.html", {matchBase:true, cwd: localFolder});
+      const files = globSync("index-top.html", {matchBase:true, cwd: localFolder});
 
       for (const indexTopFile of files) {
         const indexTopFolder = indexTopFile.replace(/index-top\.html$/, "");
