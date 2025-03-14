@@ -6,7 +6,7 @@
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint",
     "package": "npm-run-all package:*",
     "package:main": "ncc build -o dist --source-map --license licenses.txt",
     "package:deploy-path": "ncc build src/deploy-path.ts -o deploy-path/dist --source-map --license licenses.txt",
@@ -32,6 +32,8 @@
     "glob": "^11.0.1"
   },
   "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.4.1",
+    "@eslint/js": "^9.22.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.24",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
@@ -46,6 +48,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "3.5.2",
     "ts-jest": "^29.2.6",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
   }
 }
