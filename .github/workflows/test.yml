@@ -15,8 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # We don't need to even install for this one
-      - uses: ./deploy-path/ 
+      - uses: ./deploy-path/
       # We have to install before this one because it is going to try to build
       - run: |
           npm install
       - uses: ./
+        with:
+          github-token: 'fake-token'
