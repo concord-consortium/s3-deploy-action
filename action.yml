@@ -45,9 +45,6 @@ inputs:
       max-age parameter for the aws sync command when copying files for version deploys.
       This overrides the built-in value for version deploys.
     required: false
-  github-token:
-    description: GitHub token
-    required: true
   deployRunUrl:
     description: "Templated string for the URL to run the deployed files. The string can
       contain the following placeholder: __deployPath__"

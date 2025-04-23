@@ -13,7 +13,7 @@ async function run(): Promise<void> {
   let octokit: ReturnType<typeof github.getOctokit> | undefined;
 
   if (!isSelfRepo) {
-    token = core.getInput("github-token", { required: true });
+    token = core.getInput("github-token") || process.env.GITHUB_TOKEN || "";
     octokit = github.getOctokit(token);
   }
 
@@ -28,7 +28,7 @@ async function run(): Promise<void> {
   core.info(`deployPath: ${deployPath}`);
 
   try {
-    if (!isSelfRepo) {
+    if (token && !isSelfRepo) {
       const deploymentResp = await octokit?.rest.repos.createDeployment({
         owner,
         repo,
