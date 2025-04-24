@@ -2,6 +2,7 @@ jest.mock("@actions/exec");
 
 jest.mock("@actions/core", () => ({
   getInput: (name: string) => {
+    if (name === "github-token") return "test-token";
     return "";
   },
   setOutput: jest.fn(),
@@ -22,7 +23,8 @@ jest.mock("@actions/github", () => ({
     repo: {
       owner: "concord-consortium",
       repo: "s3-deploy-action"
-    }
+    },
+    ref: "refs/heads/test-branch"
   }
 }));
 
