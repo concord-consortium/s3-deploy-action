@@ -124,12 +124,13 @@ const process = __importStar(__nccwpck_require__(932));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const { repo, owner } = github.context.repo;
-        const isSelfRepo = repo === "s3-deploy-action" && owner === "concord-consortium";
-        let token;
         let octokit;
-        if (!isSelfRepo) {
-            token = core.getInput("github-token", { required: true });
-            octokit = github.getOctokit(token);
+        const isTest = process.env.NODE_ENV === "test";
+        if (!isTest) {
+            const token = core.getInput("github-token") || process.env.GITHUB_TOKEN;
+            if (token) {
+                octokit = github.getOctokit(token);
+            }
         }
         let deploymentId;
         const { deployPath, version, branch, error: deployError } = (0, deploy_props_1.getDeployProps)();
@@ -139,8 +140,8 @@ function run() {
         }
         core.info(`deployPath: ${deployPath}`);
         try {
-            if (!isSelfRepo) {
-                const deploymentResp = yield (octokit === null || octokit === void 0 ? void 0 : octokit.rest.repos.createDeployment({
+            if (octokit && !isTest) {
+                const deploymentResp = yield octokit.rest.repos.createDeployment({
                     owner,
                     repo,
                     ref: github.context.ref,
@@ -148,7 +149,7 @@ function run() {
                     environment: branch ? "development" : "staging",
                     auto_merge: false,
                     description: "Deploying to S3",
-                }));
+                });
                 if (!(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data) || !("id" in deploymentResp.data)) {
                     throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data)}`);
                 }
@@ -207,8 +208,8 @@ function run() {
                 const logUrl = core.getInput("deployRunUrl").replace(/__deployPath__/, deployPath);
                 core.setOutput("logUrl", logUrl);
                 core.info(`Deployment log URL: ${logUrl}`);
-                if (deploymentId && !isSelfRepo) {
-                    yield (octokit === null || octokit === void 0 ? void 0 : octokit.rest.repos.createDeploymentStatus({
+                if (deploymentId && octokit && !isTest) {
+                    yield octokit.rest.repos.createDeploymentStatus({
                         owner,
                         repo,
                         deployment_id: deploymentId,
@@ -216,15 +217,15 @@ function run() {
                         environment_url: logUrl,
                         log_url: logUrl,
                         description: "Deployment finished successfully"
-                    }));
+                    });
                 }
             }
         }
         catch (error) {
             core.setFailed(`Action failed with error: ${error}`);
-            if (!deploymentId || isSelfRepo)
+            if (!deploymentId || !octokit || isTest)
                 return;
-            yield (octokit === null || octokit === void 0 ? void 0 : octokit.rest.repos.createDeploymentStatus({
+            yield octokit.rest.repos.createDeploymentStatus({
                 owner,
                 repo,
                 deployment_id: deploymentId,
@@ -232,7 +233,7 @@ function run() {
                 environment_url: "",
                 log_url: "",
                 description: `Deployment failed with error: ${error}`
-            }));
+            });
         }
     });
 }
