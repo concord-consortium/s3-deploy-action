@@ -7,15 +7,8 @@ import * as process from "process";
 
 async function run(): Promise<void> {
   const { repo, owner } = github.context.repo;
-  const isSelfRepo = repo === "s3-deploy-action" && owner === "concord-consortium";
-
-  let token: string | undefined;
-  let octokit: ReturnType<typeof github.getOctokit> | undefined;
-
-  if (!isSelfRepo) {
-    token = core.getInput("github-token") || process.env.GITHUB_TOKEN || "";
-    octokit = github.getOctokit(token);
-  }
+  const token = core.getInput("github-token") || process.env.GITHUB_TOKEN || "";
+  const octokit = github.getOctokit(token);
 
   let deploymentId: number | undefined;
   const { deployPath, version, branch, error: deployError } = getDeployProps();
@@ -28,7 +21,7 @@ async function run(): Promise<void> {
   core.info(`deployPath: ${deployPath}`);
 
   try {
-    if (token && !isSelfRepo) {
+    if (token) {
       const deploymentResp = await octokit?.rest.repos.createDeployment({
         owner,
         repo,
@@ -109,7 +102,7 @@ async function run(): Promise<void> {
       core.setOutput("logUrl", logUrl);
       core.info(`Deployment log URL: ${logUrl}`);
 
-      if (deploymentId && !isSelfRepo) {
+      if (deploymentId) {
         await octokit?.rest.repos.createDeploymentStatus({
           owner,
           repo,
@@ -124,7 +117,7 @@ async function run(): Promise<void> {
 
   } catch (error) {
     core.setFailed(`Action failed with error: ${error}`);
-    if (!deploymentId || isSelfRepo) return;
+    if (!deploymentId) return;
 
     await octokit?.rest.repos.createDeploymentStatus({
       owner,
