@@ -2,7 +2,6 @@ jest.mock("@actions/exec");
 
 jest.mock("@actions/core", () => ({
   getInput: (name: string) => {
-    if (name === "github-token") return "test-token";
     return "";
   },
   setOutput: jest.fn(),
@@ -284,7 +283,6 @@ describe("built actions run using env / stdout protocol", () => {
           // Pass the build input as an env variable
           INPUT_BUILD: "echo no build",
           GITHUB_REF: "refs/heads/test-branch",
-          TEST_SKIP_GITHUB_API: "true", // disable real GitHub API calls
         },
         "branch/test-branch");
     });
@@ -299,7 +297,6 @@ describe("built actions run using env / stdout protocol", () => {
           INPUT_BUILD: "echo no build",
           GITHUB_REF: "refs/pull/123/merge",
           GITHUB_HEAD_REF: "test-branch2",
-          TEST_SKIP_GITHUB_API: "true", // disable real GitHub API calls
         },
         "branch/test-branch2");
     });
