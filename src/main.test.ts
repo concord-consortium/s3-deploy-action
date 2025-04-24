@@ -247,7 +247,7 @@ function testActionOutput(
     ...environment,
     GITHUB_OUTPUT: "",
     GITHUB_REPOSITORY: "concord-consortium/s3-deploy-action",
-    "INPUT_GITHUB-TOKEN": "test-token"
+    NODE_ENV: "test"
   };
 
   const options: childProcess.ExecFileSyncOptions = {

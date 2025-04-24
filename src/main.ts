@@ -7,12 +7,14 @@ import * as process from "process";
 
 async function run(): Promise<void> {
   const { repo, owner } = github.context.repo;
-
   let octokit: ReturnType<typeof github.getOctokit> | undefined;
-  const token = core.getInput("github-token") || process.env.GITHUB_TOKEN;
 
-  if (token) {
-    octokit = github.getOctokit(token);
+  const isTest = process.env.NODE_ENV === "test";
+  if (!isTest) {
+    const token = core.getInput("github-token") || process.env.GITHUB_TOKEN;
+    if (token) {
+      octokit = github.getOctokit(token);
+    }
   }
 
   let deploymentId: number | undefined;
@@ -26,7 +28,7 @@ async function run(): Promise<void> {
   core.info(`deployPath: ${deployPath}`);
 
   try {
-    if (octokit) {
+    if (octokit && !isTest) {
       const deploymentResp = await octokit.rest.repos.createDeployment({
         owner,
         repo,
@@ -107,7 +109,7 @@ async function run(): Promise<void> {
       core.setOutput("logUrl", logUrl);
       core.info(`Deployment log URL: ${logUrl}`);
 
-      if (deploymentId && octokit) {
+      if (deploymentId && octokit && !isTest) {
         await octokit.rest.repos.createDeploymentStatus({
           owner,
           repo,
@@ -122,7 +124,7 @@ async function run(): Promise<void> {
 
   } catch (error) {
     core.setFailed(`Action failed with error: ${error}`);
-    if (!deploymentId || !octokit) return;
+    if (!deploymentId || !octokit || isTest) return;
 
     await octokit.rest.repos.createDeploymentStatus({
       owner,
