@@ -127,7 +127,7 @@ function run() {
         let octokit;
         const isTest = process.env.NODE_ENV === "test";
         if (!isTest) {
-            const token = core.getInput("github-token") || process.env.GITHUB_TOKEN;
+            const token = core.getInput("github-token");
             if (token) {
                 octokit = github.getOctokit(token);
             }
