@@ -1,5 +1,33 @@
 jest.mock("@actions/exec");
 
+jest.mock("@actions/core", () => ({
+  getInput: (name: string) => {
+    if (name === "githubToken") return "test-token";
+    return "";
+  },
+  setOutput: jest.fn(),
+  setFailed: jest.fn(),
+  info: jest.fn()
+}));
+
+jest.mock("@actions/github", () => ({
+  getOctokit: jest.fn(() => ({
+    rest: {
+      repos: {
+        createDeployment: jest.fn().mockResolvedValue({ data: { id: 12345 } }),
+        createDeploymentStatus: jest.fn().mockResolvedValue({}),
+      }
+    }
+  })),
+  context: {
+    repo: {
+      owner: "concord-consortium",
+      repo: "s3-deploy-action"
+    },
+    ref: "refs/heads/test-branch"
+  }
+}));
+
 import { s3Update } from "./s3-update";
 import * as process from "process";
 import * as childProcess from "child_process";
@@ -217,7 +245,9 @@ function testActionOutput(
   // make sure this variable isn't set even when this test is running in GitHub actions
   const env = {
     ...environment,
-    GITHUB_OUTPUT: ""
+    GITHUB_OUTPUT: "",
+    GITHUB_REPOSITORY: "concord-consortium/s3-deploy-action",
+    NODE_ENV: "test"
   };
 
   const options: childProcess.ExecFileSyncOptions = {
@@ -237,18 +267,18 @@ function testActionOutput(
     } else {
       console.log("Error running command", error);
     }
-    fail("Error running command");
+    throw new Error("Error running command");
   }
 }
 
 // This test runs against the built version of the code so you need to run
-// `npm run build` and `npm run package` first 
+// `npm run build` and `npm run package` first
 describe("built actions run using env / stdout protocol", () => {
   describe("main action", () => {
     const indexPath = path.join(__dirname, "..", "dist", "index.js");
     test("running in a push event on a branch", () => {
       testActionOutput(
-        indexPath, 
+        indexPath,
         {
           // The path is needed so the build command below will run
           PATH: process.env.PATH!,
@@ -261,7 +291,7 @@ describe("built actions run using env / stdout protocol", () => {
 
     test("running in a pull_request event on a branch", () => {
       testActionOutput(
-        indexPath, 
+        indexPath,
         {
           // The path is needed so the build command below will run
           PATH: process.env.PATH!,
@@ -273,21 +303,21 @@ describe("built actions run using env / stdout protocol", () => {
         "branch/test-branch2");
     });
   });
-  
+
   describe("deploy-path action", () => {
     const indexPath = path.join(__dirname, "..", "deploy-path", "dist", "index.js");
     test("running in a push event on a branch", () => {
       testActionOutput(
-        indexPath, 
+        indexPath,
         {
           GITHUB_REF: "refs/heads/test-branch2",
         },
         "branch/test-branch2");
     });
-  
+
     test("running in a pull_request event on a branch", () => {
       testActionOutput(
-        indexPath, 
+        indexPath,
         {
           GITHUB_REF: "refs/pull/123/merge",
           GITHUB_HEAD_REF: "test-branch2",
@@ -295,5 +325,5 @@ describe("built actions run using env / stdout protocol", () => {
         "branch/test-branch2");
     });
   });
-  
+
 });

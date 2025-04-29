@@ -5,11 +5,11 @@
 // and requires more logic to make sure we are looking at the right ref.
 //
 // Perhaps in the future we'll want more information about the event that triggered
-// the action. In that case it might make sense to switch to using the context 
-// object. Testing this will be harder because we'll have to set GITHUB_EVENT_NAME 
-// and GITHUB_EVENT_PATH and write the payload to the file referred to by 
+// the action. In that case it might make sense to switch to using the context
+// object. Testing this will be harder because we'll have to set GITHUB_EVENT_NAME
+// and GITHUB_EVENT_PATH and write the payload to the file referred to by
 // GITHUB_EVENT_PATH.
-// 
+//
 // import {context} from "@actions/github";
 // import {WebhookEventMap, WebhookEventName} from "@octokit/webhooks-definitions/schema";
 // type TypedContext = {
@@ -20,7 +20,7 @@
 //   ref = typedContext.payload.pull_request.head.ref;
 // }
 
-export function getDeployProps(refOverride?: string): {deployPath: string, version?: string, branch?: string} {
+export function getDeployProps(refOverride?: string): {deployPath: string, version?: string, branch?: string, error?: string} {
   const headRefName = process.env.GITHUB_HEAD_REF;
   const headRef = headRefName && `/refs/heads/${headRefName}`;
   const ref = refOverride || headRef || process.env.GITHUB_REF;
@@ -51,5 +51,6 @@ export function getDeployProps(refOverride?: string): {deployPath: string, versi
       branch: strippedBranch
     };
   }
-  throw new Error(`Unknown ref: ${ref}`);
+
+  return { deployPath: "", error: `Unknown ref: ${ref}` };
 }
