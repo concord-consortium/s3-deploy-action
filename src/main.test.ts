@@ -2,7 +2,7 @@ jest.mock("@actions/exec");
 
 jest.mock("@actions/core", () => ({
   getInput: (name: string) => {
-    if (name === "github-token") return "test-token";
+    if (name === "githubToken") return "test-token";
     return "";
   },
   setOutput: jest.fn(),
