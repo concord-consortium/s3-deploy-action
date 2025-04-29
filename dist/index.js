@@ -140,7 +140,7 @@ function run() {
         }
         core.info(`deployPath: ${deployPath}`);
         try {
-            if (octokit && !isTest) {
+            if (octokit) {
                 const deploymentResp = yield octokit.rest.repos.createDeployment({
                     owner,
                     repo,
@@ -155,7 +155,7 @@ function run() {
                 }
                 deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
             }
-            const workingDirectory = core.getInput("workingDirectory") || "";
+            const workingDirectory = core.getInput("workingDirectory");
             const build = core.getInput("build") || "npm run build";
             const execOptions = {};
             if (workingDirectory) {
@@ -177,7 +177,7 @@ function run() {
             if (workingDirectory) {
                 localFolderParts.push(workingDirectory);
             }
-            localFolderParts.push(folderToDeploy || "dist");
+            localFolderParts.push(folderToDeploy);
             const localFolder = localFolderParts.join("/");
             let maxBranchAge = parseInt(core.getInput("maxBranchAge"), 10);
             if (isNaN(maxBranchAge)) {
@@ -205,19 +205,13 @@ function run() {
                 };
                 core.info(`Calling s3Update with: ${JSON.stringify(options)}`);
                 yield (0, s3_update_1.s3Update)(options);
-                const logUrl = core.getInput("deployRunUrl").replace(/__deployPath__/, deployPath);
+                const deployRunUrl = core.getInput("deployRunUrl");
+                const logUrl = deployRunUrl ? deployRunUrl.replace(/__deployPath__/, deployPath) : "";
                 core.setOutput("logUrl", logUrl);
                 core.info(`Deployment log URL: ${logUrl}`);
-                if (deploymentId && octokit && !isTest) {
-                    yield octokit.rest.repos.createDeploymentStatus({
-                        owner,
-                        repo,
-                        deployment_id: deploymentId,
-                        state: "success",
-                        environment_url: logUrl,
-                        log_url: logUrl,
-                        description: "Deployment finished successfully"
-                    });
+                if (deploymentId && octokit) {
+                    yield octokit.rest.repos.createDeploymentStatus(Object.assign(Object.assign({ owner,
+                        repo, deployment_id: deploymentId, state: "success" }, (logUrl && { environment_url: logUrl, log_url: logUrl })), { description: "Deployment finished successfully" }));
                 }
             }
         }
