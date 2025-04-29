@@ -28,7 +28,7 @@ async function run(): Promise<void> {
   core.info(`deployPath: ${deployPath}`);
 
   try {
-    if (octokit && !isTest) {
+    if (octokit) {
       const deploymentResp = await octokit.rest.repos.createDeployment({
         owner,
         repo,
@@ -46,7 +46,7 @@ async function run(): Promise<void> {
       deploymentId = deploymentResp?.data.id;
     }
 
-    const workingDirectory = core.getInput("workingDirectory") || "";
+    const workingDirectory = core.getInput("workingDirectory");
     const build = core.getInput("build") || "npm run build";
     const execOptions: ExecOptions = {};
     if (workingDirectory) {
@@ -71,7 +71,7 @@ async function run(): Promise<void> {
     if (workingDirectory) {
       localFolderParts.push(workingDirectory);
     }
-    localFolderParts.push(folderToDeploy || "dist");
+    localFolderParts.push(folderToDeploy);
     const localFolder = localFolderParts.join("/");
 
     let maxBranchAge: number|undefined = parseInt(core.getInput("maxBranchAge"), 10);
@@ -105,18 +105,18 @@ async function run(): Promise<void> {
 
       await s3Update(options);
 
-      const logUrl = core.getInput("deployRunUrl").replace(/__deployPath__/, deployPath);
+      const deployRunUrl = core.getInput("deployRunUrl");
+      const logUrl = deployRunUrl ? deployRunUrl.replace(/__deployPath__/, deployPath) : "";
       core.setOutput("logUrl", logUrl);
       core.info(`Deployment log URL: ${logUrl}`);
 
-      if (deploymentId && octokit && !isTest) {
+      if (deploymentId && octokit) {
         await octokit.rest.repos.createDeploymentStatus({
           owner,
           repo,
           deployment_id: deploymentId,
           state: "success",
-          environment_url: logUrl,
-          log_url: logUrl,
+          ...(logUrl && { environment_url: logUrl, log_url: logUrl }),
           description: "Deployment finished successfully"
         });
       }
