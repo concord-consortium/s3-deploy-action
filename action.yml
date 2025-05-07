@@ -13,7 +13,7 @@ inputs:
     required: true
   prefix:
     description: S3 prefix to prepend to files uploaded to S3
-    required: true
+    required: false
   noPrefix:
     description: If "true" the prefix is not used for the top level bucket
     required: false
