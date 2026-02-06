@@ -3,6 +3,7 @@ import * as github from "@actions/github";
 import {exec, ExecOptions} from "@actions/exec";
 import {getDeployProps} from "./deploy-props";
 import {s3Update} from "./s3-update";
+import {resolveAwsCredentials} from "./aws-credentials";
 import * as process from "process";
 
 async function run(): Promise<void> {
@@ -85,8 +86,10 @@ async function run(): Promise<void> {
     const maxAge = version ? maxVersionAge : (branch ? maxBranchAge : undefined);
 
     if (bucket && (prefix || noPrefix)) {
-      process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
-      process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
+      resolveAwsCredentials(
+        core.getInput("awsAccessKeyId"),
+        core.getInput("awsSecretAccessKey")
+      );
       process.env.AWS_DEFAULT_REGION = "us-east-1";
 
       const options = {
