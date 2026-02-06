@@ -167,19 +167,29 @@ function run() {
         core.info(`deployPath: ${deployPath}`);
         try {
             if (octokit) {
-                const deploymentResp = yield octokit.rest.repos.createDeployment({
-                    owner,
-                    repo,
-                    ref: github.context.ref,
-                    required_contexts: [], // skip status checks
-                    environment: branch ? "development" : "staging",
-                    auto_merge: false,
-                    description: "Deploying to S3",
-                });
-                if (!(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data) || !("id" in deploymentResp.data)) {
-                    throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data)}`);
+                try {
+                    const deploymentResp = yield octokit.rest.repos.createDeployment({
+                        owner,
+                        repo,
+                        ref: github.context.ref,
+                        required_contexts: [], // skip status checks
+                        environment: branch ? "development" : "staging",
+                        auto_merge: false,
+                        description: "Deploying to S3",
+                    });
+                    if (!(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data) || !("id" in deploymentResp.data)) {
+                        throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data)}`);
+                    }
+                    deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
                 }
-                deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
+                catch (e) {
+                    const message = e instanceof Error ? e.message : String(e);
+                    if (message.includes("Resource not accessible by integration")) {
+                        throw new Error("Unable to create GitHub deployment: the provided token lacks the 'deployments: write' permission. " +
+                            "If your workflow sets explicit 'permissions', add 'deployments: write' to the list.");
+                    }
+                    throw e;
+                }
             }
             const workingDirectory = core.getInput("workingDirectory");
             const build = core.getInput("build") || "npm run build";

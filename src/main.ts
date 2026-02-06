@@ -4,7 +4,6 @@ import {exec, ExecOptions} from "@actions/exec";
 import {getDeployProps} from "./deploy-props";
 import {s3Update} from "./s3-update";
 import {resolveAwsCredentials} from "./aws-credentials";
-import * as process from "process";
 
 async function run(): Promise<void> {
   const { repo, owner } = github.context.repo;
@@ -30,21 +29,31 @@ async function run(): Promise<void> {
 
   try {
     if (octokit) {
-      const deploymentResp = await octokit.rest.repos.createDeployment({
-        owner,
-        repo,
-        ref: github.context.ref,
-        required_contexts: [], // skip status checks
-        environment: branch ? "development" : "staging",
-        auto_merge: false,
-        description: "Deploying to S3",
-      });
+      try {
+        const deploymentResp = await octokit.rest.repos.createDeployment({
+          owner,
+          repo,
+          ref: github.context.ref,
+          required_contexts: [], // skip status checks
+          environment: branch ? "development" : "staging",
+          auto_merge: false,
+          description: "Deploying to S3",
+        });
 
-      if (!deploymentResp?.data || !("id" in deploymentResp.data)) {
-        throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp?.data)}`);
+        if (!deploymentResp?.data || !("id" in deploymentResp.data)) {
+          throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp?.data)}`);
+        }
+
+        deploymentId = deploymentResp?.data.id;
+      } catch (e: unknown) {
+        if (e && typeof e === "object" && "status" in e && e.status === 403) {
+          throw new Error(
+            "Unable to create GitHub deployment: the provided token lacks the 'deployments: write' permission. " +
+            "If your workflow sets explicit 'permissions', add 'deployments: write' to the list."
+          );
+        }
+        throw e;
       }
-
-      deploymentId = deploymentResp?.data.id;
     }
 
     const workingDirectory = core.getInput("workingDirectory");
