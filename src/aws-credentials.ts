@@ -14,8 +14,19 @@ export function resolveAwsCredentials(
     return;
   }
 
+  const found: string[] = [];
+  if (accessKeyIdInput) found.push("awsAccessKeyId input");
+  if (secretAccessKeyInput) found.push("awsSecretAccessKey input");
+  if (process.env.AWS_ACCESS_KEY_ID) found.push("AWS_ACCESS_KEY_ID env var");
+  if (process.env.AWS_SECRET_ACCESS_KEY) found.push("AWS_SECRET_ACCESS_KEY env var");
+
+  const foundMsg = found.length > 0
+    ? `Found: ${found.join(", ")}. `
+    : "";
+
   throw new Error(
-    "AWS credentials not found. Either provide awsAccessKeyId/awsSecretAccessKey inputs " +
-    "or configure environment credentials (e.g. using aws-actions/configure-aws-credentials)."
+    `${foundMsg}Both an access key ID and secret access key are required. ` +
+    "Provide awsAccessKeyId/awsSecretAccessKey inputs or configure environment credentials " +
+    "(e.g. using aws-actions/configure-aws-credentials)."
   );
 }

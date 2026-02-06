@@ -31,26 +31,16 @@ describe("resolveAwsCredentials", () => {
     expect(process.env.AWS_SESSION_TOKEN).toBe("env-session-token");
   });
 
-  test("preserves AWS_SESSION_TOKEN from environment when inputs are empty", () => {
-    process.env.AWS_ACCESS_KEY_ID = "env-key-id";
-    process.env.AWS_SECRET_ACCESS_KEY = "env-secret-key";
-    process.env.AWS_SESSION_TOKEN = "env-session-token";
-
-    resolveAwsCredentials("", "");
-    expect(process.env.AWS_SESSION_TOKEN).toBe("env-session-token");
-  });
-
   test("throws when neither inputs nor env vars are present", () => {
     expect(() => resolveAwsCredentials("", "")).toThrow(
-      "AWS credentials not found. Either provide awsAccessKeyId/awsSecretAccessKey inputs " +
-      "or configure environment credentials (e.g. using aws-actions/configure-aws-credentials)."
+      "Both an access key ID and secret access key are required."
     );
   });
 
-  test("throws when only access key id is present but not secret", () => {
+  test("throws and reports what was found when only env access key id is present", () => {
     process.env.AWS_ACCESS_KEY_ID = "env-key-id";
     expect(() => resolveAwsCredentials("", "")).toThrow(
-      "AWS credentials not found"
+      "Found: AWS_ACCESS_KEY_ID env var. Both an access key ID and secret access key are required."
     );
   });
 });

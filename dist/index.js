@@ -19,7 +19,14 @@ function resolveAwsCredentials(accessKeyIdInput, secretAccessKeyInput) {
         // AWS_SESSION_TOKEN, if present, is also picked up automatically by the CLI.
         return;
     }
-    throw new Error("AWS credentials not found. Either provide awsAccessKeyId/awsSecretAccessKey inputs " +
+    const missing = [];
+    if (!accessKeyIdInput && !process.env.AWS_ACCESS_KEY_ID) {
+        missing.push("AWS_ACCESS_KEY_ID");
+    }
+    if (!secretAccessKeyInput && !process.env.AWS_SECRET_ACCESS_KEY) {
+        missing.push("AWS_SECRET_ACCESS_KEY");
+    }
+    throw new Error(`AWS credentials not found (missing ${missing.join(" and ")}). Either provide awsAccessKeyId/awsSecretAccessKey inputs ` +
         "or configure environment credentials (e.g. using aws-actions/configure-aws-credentials).");
 }
 
@@ -146,7 +153,6 @@ const exec_1 = __nccwpck_require__(5236);
 const deploy_props_1 = __nccwpck_require__(266);
 const s3_update_1 = __nccwpck_require__(3820);
 const aws_credentials_1 = __nccwpck_require__(6554);
-const process = __importStar(__nccwpck_require__(932));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const { repo, owner } = github.context.repo;
@@ -183,8 +189,7 @@ function run() {
                     deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
                 }
                 catch (e) {
-                    const message = e instanceof Error ? e.message : String(e);
-                    if (message.includes("Resource not accessible by integration")) {
+                    if (e && typeof e === "object" && "status" in e && e.status === 403) {
                         throw new Error("Unable to create GitHub deployment: the provided token lacks the 'deployments: write' permission. " +
                             "If your workflow sets explicit 'permissions', add 'deployments: write' to the list.");
                     }
@@ -30805,14 +30810,6 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
-
-/***/ }),
-
-/***/ 932:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("process");
 
 /***/ }),
 
