@@ -1,6 +1,6 @@
 # Usage
 
-## Basic Example
+## Basic Example — Access Keys
 Add the following step to a GitHub workflow file:
 ```
 - uses: concord-consortium/s3-deploy-action@v1
@@ -10,6 +10,28 @@ Add the following step to a GitHub workflow file:
     awsAccessKeyId: ${{ secrets.AWS_ACCESS_KEY_ID }}
     awsSecretAccessKey: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 ```
+
+## Basic Example — OIDC (no stored secrets)
+If your repository is configured with GitHub OIDC and an IAM role, you can
+use `aws-actions/configure-aws-credentials` to assume the role before invoking
+this action. No `awsAccessKeyId` or `awsSecretAccessKey` inputs are needed:
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
+      aws-region: us-east-1
+
+  - uses: concord-consortium/s3-deploy-action@v1
+    with:
+      bucket: models-resources
+      prefix: name-of-project
+```
+
 You should replace `name-of-project` with the repository name.
 
 This will build the code with `npm run build`, and then copy the output in `dist` up to

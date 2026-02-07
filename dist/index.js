@@ -1,6 +1,38 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 6554:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.resolveAwsCredentials = resolveAwsCredentials;
+function resolveAwsCredentials(accessKeyIdInput, secretAccessKeyInput) {
+    if (accessKeyIdInput && secretAccessKeyInput) {
+        process.env.AWS_ACCESS_KEY_ID = accessKeyIdInput;
+        process.env.AWS_SECRET_ACCESS_KEY = secretAccessKeyInput;
+        return;
+    }
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+        // Credentials already in environment (e.g. from configure-aws-credentials).
+        // AWS_SESSION_TOKEN, if present, is also picked up automatically by the CLI.
+        return;
+    }
+    const missing = [];
+    if (!accessKeyIdInput && !process.env.AWS_ACCESS_KEY_ID) {
+        missing.push("AWS_ACCESS_KEY_ID");
+    }
+    if (!secretAccessKeyInput && !process.env.AWS_SECRET_ACCESS_KEY) {
+        missing.push("AWS_SECRET_ACCESS_KEY");
+    }
+    throw new Error(`AWS credentials not found (missing ${missing.join(" and ")}). Either provide awsAccessKeyId/awsSecretAccessKey inputs ` +
+        "or configure environment credentials (e.g. using aws-actions/configure-aws-credentials).");
+}
+
+
+/***/ }),
+
 /***/ 266:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -120,7 +152,7 @@ const github = __importStar(__nccwpck_require__(3228));
 const exec_1 = __nccwpck_require__(5236);
 const deploy_props_1 = __nccwpck_require__(266);
 const s3_update_1 = __nccwpck_require__(3820);
-const process = __importStar(__nccwpck_require__(932));
+const aws_credentials_1 = __nccwpck_require__(6554);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const { repo, owner } = github.context.repo;
@@ -141,19 +173,28 @@ function run() {
         core.info(`deployPath: ${deployPath}`);
         try {
             if (octokit) {
-                const deploymentResp = yield octokit.rest.repos.createDeployment({
-                    owner,
-                    repo,
-                    ref: github.context.ref,
-                    required_contexts: [], // skip status checks
-                    environment: branch ? "development" : "staging",
-                    auto_merge: false,
-                    description: "Deploying to S3",
-                });
-                if (!(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data) || !("id" in deploymentResp.data)) {
-                    throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data)}`);
+                try {
+                    const deploymentResp = yield octokit.rest.repos.createDeployment({
+                        owner,
+                        repo,
+                        ref: github.context.ref,
+                        required_contexts: [], // skip status checks
+                        environment: branch ? "development" : "staging",
+                        auto_merge: false,
+                        description: "Deploying to S3",
+                    });
+                    if (!(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data) || !("id" in deploymentResp.data)) {
+                        throw new Error(`Failed to create deployment: ${JSON.stringify(deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data)}`);
+                    }
+                    deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
                 }
-                deploymentId = deploymentResp === null || deploymentResp === void 0 ? void 0 : deploymentResp.data.id;
+                catch (e) {
+                    if (e && typeof e === "object" && "status" in e && e.status === 403) {
+                        throw new Error("Unable to create GitHub deployment: the provided token lacks the 'deployments: write' permission. " +
+                            "If your workflow sets explicit 'permissions', add 'deployments: write' to the list.");
+                    }
+                    throw e;
+                }
             }
             const workingDirectory = core.getInput("workingDirectory");
             const build = core.getInput("build") || "npm run build";
@@ -189,8 +230,7 @@ function run() {
             }
             const maxAge = version ? maxVersionAge : (branch ? maxBranchAge : undefined);
             if (bucket && (prefix || noPrefix)) {
-                process.env.AWS_ACCESS_KEY_ID = core.getInput("awsAccessKeyId");
-                process.env.AWS_SECRET_ACCESS_KEY = core.getInput("awsSecretAccessKey");
+                (0, aws_credentials_1.resolveAwsCredentials)(core.getInput("awsAccessKeyId"), core.getInput("awsSecretAccessKey"));
                 process.env.AWS_DEFAULT_REGION = "us-east-1";
                 const options = {
                     deployPath,
@@ -30770,14 +30810,6 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
-
-/***/ }),
-
-/***/ 932:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("process");
 
 /***/ }),
 

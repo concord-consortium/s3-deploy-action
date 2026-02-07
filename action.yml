@@ -3,11 +3,13 @@ description: 'Deploy an SPA to S3 using branch and version sub directories'
 author: 'The Concord Consortium'
 inputs:
   awsAccessKeyId:
-    description: AWS access key id
-    required: true
+    description: AWS access key id. Not needed if AWS credentials are already
+      configured in the environment (e.g. via aws-actions/configure-aws-credentials).
+    required: false
   awsSecretAccessKey:
-    description: AWS secret access key
-    required: true
+    description: AWS secret access key. Not needed if AWS credentials are already
+      configured in the environment (e.g. via aws-actions/configure-aws-credentials).
+    required: false
   bucket:
     description: S3 Bucket to deploy files to
     required: true
